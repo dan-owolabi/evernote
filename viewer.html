@@ -480,7 +480,7 @@
                 if (Array.isArray(canvasData)) {
                     canvasData = { elements: canvasData };
                 }
-                securityConfig = canvasData?.security || null;
+                securityConfig = (canvasData && canvasData.security) ? canvasData.security : null;
                 const hasSecurityType = !!(securityConfig && securityConfig.type && securityConfig.type !== 'none');
                 const isEnabled = !!(securityConfig && securityConfig.enabled);
                 const hasAnswer = !!(securityConfig && String(securityConfig.answer || '').trim());
@@ -524,9 +524,9 @@
         // Check password
         function checkPassword() {
             let input = document.getElementById('passwordInput').value.trim().toLowerCase();
-            let answer = (securityConfig?.answer || '').trim().toLowerCase();
+            let answer = ((securityConfig && securityConfig.answer) || '').trim().toLowerCase();
 
-            if ((securityConfig?.type || '') === 'date_short') {
+            if (((securityConfig && securityConfig.type) || '') === 'date_short') {
                 const normalizeShortDate = (raw) => {
                     const value = String(raw || '').trim();
                     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -563,9 +563,12 @@
 
         // Allow Enter key to submit password
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('passwordInput')?.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') checkPassword();
-            });
+            const passwordInput = document.getElementById('passwordInput');
+            if (passwordInput) {
+                passwordInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') checkPassword();
+                });
+            }
         });
 
         // Render canvas elements
@@ -632,16 +635,17 @@
                         break;
 
                     case 'video':
-                        if (data.isEmbed || data.src?.includes('youtube') || data.src?.includes('youtu.be')) {
+                        const mediaSrc = data.src || data.content || '';
+                        if (data.isEmbed || mediaSrc.includes('youtube') || mediaSrc.includes('youtu.be')) {
                             const iframe = document.createElement('iframe');
-                            iframe.src = data.src || data.content;
+                            iframe.src = mediaSrc;
                             iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
                             iframe.allowFullscreen = true;
                             iframe.className = 'el-content';
                             el.appendChild(iframe);
                         } else {
                             const video = document.createElement('video');
-                            video.src = data.src || data.content;
+                            video.src = mediaSrc;
                             video.controls = true;
                             video.className = 'el-content';
                             el.appendChild(video);
@@ -695,9 +699,12 @@
         }
 
         // Click outside to close
-        document.getElementById('letterViewer')?.addEventListener('click', (e) => {
-            if (e.target.id === 'letterViewer') closeLetterViewer();
-        });
+        const letterViewerEl = document.getElementById('letterViewer');
+        if (letterViewerEl) {
+            letterViewerEl.addEventListener('click', (e) => {
+                if (e.target.id === 'letterViewer') closeLetterViewer();
+            });
+        }
 
         // Show error
         function showError(message) {
