@@ -353,7 +353,7 @@
 
 <body>
     <!-- Loading Screen -->
-    <div class="loading hidden" id="loading">
+    <div class="loading" id="loading">
         <div class="loading-spinner"></div>
         <div class="loading-text">Loading your bouquet...</div>
     </div>
@@ -722,7 +722,18 @@
             }
         }
 
-        loadCanvas().catch(err => {
+        // Start loading with timeout
+        const loadTimeout = setTimeout(() => {
+            const loading = document.getElementById('loading');
+            if (loading && !loading.classList.contains('hidden')) {
+                showError('Connection timed out. Please check your internet or try refreshing.');
+            }
+        }, 15000); // 15 seconds timeout
+
+        loadCanvas().then(() => {
+            clearTimeout(loadTimeout);
+        }).catch(err => {
+            clearTimeout(loadTimeout);
             showError('Unexpected error: ' + err.message);
         });
     </script>
