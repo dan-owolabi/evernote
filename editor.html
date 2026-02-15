@@ -615,6 +615,43 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
 
+        /* NEW: More visible letter control buttons */
+        .letter-ctrl-btn-new {
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 13px;
+            color: #fff;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(8px);
+            min-width: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .letter-ctrl-btn-new:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .letter-ctrl-btn-new.active {
+            background: #ff4d6d;
+            color: #fff;
+            border-color: #ff4d6d;
+            box-shadow: 0 4px 12px rgba(255, 77, 109, 0.4);
+            transform: scale(1.05);
+        }
+
+        .letter-ctrl-btn-new svg {
+            display: block;
+        }
+
         /* Music iframe embeds should remain interactive */
         .el-music iframe.el-content {
             pointer-events: auto;
@@ -2508,7 +2545,9 @@
                 if (type === 'image' || type === 'video') openMediaViewer(el);
                 else if (type === 'music') { const audio = el.querySelector('audio'); if (audio) { if (audio.paused) audio.play(); else audio.pause(); } }
             };
-            if (type === 'letter') { el.ondblclick = () => { if (isDragging || isResizing) return; editSelectedLetter(); }; }
+            if (type === 'letter') {
+                // Double-click removed - only edit via toolbar button
+            }
 
             (contentLayer || canvas).appendChild(el);
             attachMusicDragHandle(el);
@@ -2626,7 +2665,8 @@
                 textarea.style.fontSize = sizes[size];
                 textarea.dataset.fontSize = size;
             }
-            btn.parentElement.querySelectorAll('.letter-ctrl-btn').forEach(b => b.classList.remove('active'));
+            // Support both old and new button classes
+            btn.parentElement.querySelectorAll('.letter-ctrl-btn, .letter-ctrl-btn-new').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         }
 
@@ -2636,7 +2676,8 @@
                 textarea.style.textAlign = align;
                 textarea.dataset.textAlign = align;
             }
-            btn.parentElement.querySelectorAll('.letter-ctrl-btn').forEach(b => b.classList.remove('active'));
+            // Support both old and new button classes
+            btn.parentElement.querySelectorAll('.letter-ctrl-btn, .letter-ctrl-btn-new').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         }
 
@@ -2698,20 +2739,6 @@
                     toggleStylesMenu(false);
                 }
             });
-        }
-
-        function showStatusToast(message) {
-            const existing = document.querySelector('.status-toast');
-            if (existing) existing.remove();
-            const toast = document.createElement('div');
-            toast.className = 'status-toast';
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            requestAnimationFrame(() => toast.classList.add('show'));
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 180);
-            }, 1800);
         }
 
         function getEventClientPoint(event) {
@@ -2837,12 +2864,22 @@
                 if (!selectedFile) return;
                 const reader = new FileReader();
                 reader.onload = (re) => {
-                    const src = re.target.result;
-                    createImageCanvasElement(src, {
-                        x: 300, y: 200, maxWidth: 360, maxHeight: 300, fallbackWidth: 280,
-                        fallbackHeight: 220
+                    // Compress image before adding to canvas
+                    compressImage(re.target.result, 800, 0.7).then(compressedSrc => {
+                        createImageCanvasElement(compressedSrc, {
+                            x: 300, y: 200, maxWidth: 360, maxHeight: 300, fallbackWidth: 280,
+                            fallbackHeight: 220
+                        });
+                        addMenu.classList.remove('active');
+                    }).catch(err => {
+                        console.error('Image compression failed:', err);
+                        // Fallback to original if compression fails
+                        createImageCanvasElement(re.target.result, {
+                            x: 300, y: 200, maxWidth: 360, maxHeight: 300, fallbackWidth: 280,
+                            fallbackHeight: 220
+                        });
+                        addMenu.classList.remove('active');
                     });
-                    addMenu.classList.remove('active');
                 };
                 reader.readAsDataURL(selectedFile);
                 e.target.value = '';
@@ -2875,6 +2912,15 @@
             input.onchange = (e) => {
                 const selectedFile = e.target.files && e.target.files[0];
                 if (!selectedFile) return;
+
+                // Check video file size - warn if very large
+                const sizeMB = selectedFile.size / (1024 * 1024);
+                if (sizeMB > 50) {
+                    if (!confirm(`This video is ${sizeMB.toFixed(1)}MB. Large videos may not save properly. Continue?`)) {
+                        return;
+                    }
+                }
+
                 const reader = new FileReader();
                 reader.onload = (re) => {
                     const src = re.target.result;
@@ -2922,7 +2968,7 @@
             <!-- Close button -->
             <button
                 style="position:absolute; top:16px; left:16px; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.3); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:18px; color:#fff; z-index:10"
-                onclick="closeModal()">âœ•</button>
+                onclick="closeModal()">×</button>
             <!-- Color dots to change bg -->
             <div class="letter-color-dots" style="position:absolute; top:20px; right:20px;">
                 <div class="letter-color-dot" style="background:#ff69b4"
@@ -2938,32 +2984,46 @@
                 <div class="letter-color-dot" style="background:#ce93d8"
                     onclick="document.getElementById('letterEditorBg').style.background='#ce93d8'"></div>
             </div>
-            <!-- Font size & alignment controls on pink bg -->
+            <!-- Font size & alignment controls - MOVED OUTSIDE for visibility -->
             <div
-                style="position:absolute; bottom:28px; left:50%; transform:translateX(-50%); display:flex; gap:16px; align-items:center; z-index:10;">
+                style="position:absolute; top:80px; right:20px; display:flex; flex-direction:column; gap:12px; z-index:10;">
+                <!-- Font Size Controls -->
                 <div
-                    style="display:flex; gap:4px; background:rgba(255,255,255,0.15); border-radius:12px; padding:4px; backdrop-filter:blur(4px);">
-                    <button type="button"
-                        class="letter-ctrl-btn ${(options.fontSize || 'medium') === 'small' ? 'active' : ''}"
-                        onclick="setLetterFontSize('small',this)" style="font-size:12px">S</button>
-                    <button type="button"
-                        class="letter-ctrl-btn ${(options.fontSize || 'medium') === 'medium' ? 'active' : ''}"
-                        onclick="setLetterFontSize('medium',this)" style="font-size:14px">M</button>
-                    <button type="button"
-                        class="letter-ctrl-btn ${(options.fontSize || 'medium') === 'big' ? 'active' : ''}"
-                        onclick="setLetterFontSize('big',this)" style="font-size:16px">L</button>
+                    style="display:flex; flex-direction:column; gap:4px; background:rgba(26,26,28,0.85); border-radius:14px; padding:8px; backdrop-filter:blur(12px); box-shadow:0 4px 16px rgba(0,0,0,0.2);">
+                    <div style="font-size:10px; color:rgba(255,255,255,0.6); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; text-align:center;">Size</div>
+                    <div style="display:flex; gap:4px;">
+                        <button type="button"
+                            class="letter-ctrl-btn-new ${(options.fontSize || 'medium') === 'small' ? 'active' : ''}"
+                            onclick="setLetterFontSize('small',this)" title="Small">S</button>
+                        <button type="button"
+                            class="letter-ctrl-btn-new ${(options.fontSize || 'medium') === 'medium' ? 'active' : ''}"
+                            onclick="setLetterFontSize('medium',this)" title="Medium">M</button>
+                        <button type="button"
+                            class="letter-ctrl-btn-new ${(options.fontSize || 'medium') === 'big' ? 'active' : ''}"
+                            onclick="setLetterFontSize('big',this)" title="Large">L</button>
+                    </div>
                 </div>
+                <!-- Alignment Controls -->
                 <div
-                    style="display:flex; gap:4px; background:rgba(255,255,255,0.15); border-radius:12px; padding:4px; backdrop-filter:blur(4px);">
-                    <button type="button"
-                        class="letter-ctrl-btn ${(options.textAlign || 'center') === 'left' ? 'active' : ''}"
-                        onclick="setLetterAlign('left',this)" title="Left">&#9776;</button>
-                    <button type="button"
-                        class="letter-ctrl-btn ${(options.textAlign || 'center') === 'center' ? 'active' : ''}"
-                        onclick="setLetterAlign('center',this)" title="Center">&#9776;</button>
-                    <button type="button"
-                        class="letter-ctrl-btn ${(options.textAlign || 'center') === 'right' ? 'active' : ''}"
-                        onclick="setLetterAlign('right',this)" title="Right">&#9776;</button>
+                    style="display:flex; flex-direction:column; gap:4px; background:rgba(26,26,28,0.85); border-radius:14px; padding:8px; backdrop-filter:blur(12px); box-shadow:0 4px 16px rgba(0,0,0,0.2);">
+                    <div style="font-size:10px; color:rgba(255,255,255,0.6); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px; text-align:center;">Align</div>
+                    <div style="display:flex; gap:4px;">
+                        <button type="button"
+                            class="letter-ctrl-btn-new ${(options.textAlign || 'center') === 'left' ? 'active' : ''}"
+                            onclick="setLetterAlign('left',this)" title="Left">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                        </button>
+                        <button type="button"
+                            class="letter-ctrl-btn-new ${(options.textAlign || 'center') === 'center' ? 'active' : ''}"
+                            onclick="setLetterAlign('center',this)" title="Center">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="18" y2="18"/></svg>
+                        </button>
+                        <button type="button"
+                            class="letter-ctrl-btn-new ${(options.textAlign || 'center') === 'right' ? 'active' : ''}"
+                            onclick="setLetterAlign('right',this)" title="Right">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
             <!-- Letter paper -->
@@ -3027,25 +3087,6 @@
         `;
                 setupDropzone('musicDropzone', 'music');
             }
-        }
-
-        function setLetterFontSize(size, btn) {
-            const textarea = document.getElementById('letterText');
-            if (!textarea) return;
-            const sizes = { 'small': '16px', 'medium': '20px', 'big': '26px' };
-            textarea.style.fontSize = sizes[size];
-            textarea.dataset.fontSize = size;
-            btn.parentElement.querySelectorAll('.letter-ctrl-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        }
-
-        function setLetterAlign(align, btn) {
-            const textarea = document.getElementById('letterText');
-            if (!textarea) return;
-            textarea.style.textAlign = align;
-            textarea.dataset.textAlign = align;
-            btn.parentElement.querySelectorAll('.letter-ctrl-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
         }
 
         function setCanvasBg(color, dot) {
@@ -3117,7 +3158,7 @@
         <div class="letter-editor-fullscreen" style="background:${safeBg};">
             <button
                 style="position:absolute; top:16px; left:16px; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.3); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:18px; color:#fff; z-index:10"
-                onclick="closeLetterViewer()">âœ•</button>
+                onclick="closeLetterViewer()">×</button>
             <div class="letter-paper-card">
                 <div class="texture"></div>
                 <div class="letter-textarea"
@@ -3151,7 +3192,7 @@
 
             viewer.innerHTML = `
         <div class="media-viewer-card">
-            <button class="letter-viewer-close" onclick="closeMediaViewer()">âœ•</button>
+            <button class="letter-viewer-close" onclick="closeMediaViewer()">×</button>
             <div class="media-viewer-body">${mediaHtml}</div>
         </div>
         `;
@@ -3625,21 +3666,17 @@
                         };
                     }
                     if (resolvedType === 'letter') {
-                        el.onclick = (e) => {
-                            if (isDragging || isResizing) return;
-                            if (e.target.closest('.resize-handle') || e.target.closest('.rotate-handle') || e.target.closest('.context-bar') ||
-                                e.target.closest('.media-close-btn') || e.target.closest('.music-drag-handle')) return;
-                            editSelectedLetter();
-                        };
-                        el.style.background = normalized.letterBg || '#ff69b4';
+                        // REMOVED: Don't open letter on click - only via edit button
+                        // Just allow selection and dragging
+                        el.style.background = 'transparent'; // Make transparent to show envelope
                         el.style.color = 'black';
-                        el.style.padding = '10px';
+                        el.style.padding = '0';
                         el.style.borderRadius = '8px';
                         el.style.display = 'flex';
                         el.style.alignItems = 'center';
                         el.style.justifyContent = 'center';
                         el.style.textAlign = 'center';
-                        el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                        el.style.boxShadow = 'none'; // Remove shadow, envelope has its own
                     }
 
                     (contentLayer || canvas).appendChild(el);
@@ -3730,25 +3767,124 @@
         }
 
         let saveTimeout;
+
+        /**
+         * Compress an image to reduce file size
+         * @param {string} dataUrl - Base64 data URL of the image
+         * @param {number} maxDimension - Max width or height (default 800px)
+         * @param {number} quality - JPEG quality 0-1 (default 0.7)
+         * @returns {Promise<string>} - Compressed image data URL
+         */
+        function compressImage(dataUrl, maxDimension = 800, quality = 0.7) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+
+                    // Calculate new dimensions while maintaining aspect ratio
+                    if (width > height && width > maxDimension) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                    } else if (height > maxDimension) {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                    }
+
+                    // Create canvas and compress
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Convert to JPEG for better compression
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+
+                    // Log compression results
+                    const originalSize = (dataUrl.length * 3 / 4) / 1024; // Approximate KB
+                    const compressedSize = (compressedDataUrl.length * 3 / 4) / 1024;
+                    console.log(`🖼️ Image compressed: ${originalSize.toFixed(0)}KB → ${compressedSize.toFixed(0)}KB (${Math.round(100 - (compressedSize / originalSize) * 100)}% smaller)`);
+
+                    resolve(compressedDataUrl);
+                };
+                img.onerror = reject;
+                img.src = dataUrl;
+            });
+        }
+
+        /**
+         * Check if localStorage has enough space
+         * @returns {object} - Storage info
+         */
+        function checkStorageSpace() {
+            try {
+                // Estimate current usage
+                let totalSize = 0;
+                for (let key in localStorage) {
+                    if (localStorage.hasOwnProperty(key)) {
+                        totalSize += localStorage[key].length + key.length;
+                    }
+                }
+
+                const usedMB = (totalSize / 1024 / 1024).toFixed(2);
+                const limitMB = 5; // Most browsers have 5-10MB limit
+                const percentUsed = (totalSize / (limitMB * 1024 * 1024) * 100).toFixed(0);
+
+                return {
+                    used: usedMB,
+                    limit: limitMB,
+                    percent: percentUsed,
+                    available: limitMB - usedMB
+                };
+            } catch (e) {
+                return { used: 0, limit: 5, percent: 0, available: 5 };
+            }
+        }
+
         function saveCanvas(forcePublish = false, securityConfig = null) {
             const state = collectCanvasState();
             if (securityConfig) state.security = securityConfig;
 
-            // IMMEDIATE local save for data safety
-            try { 
-                localStorage.setItem('pinkBouquetCanvasId', canvasId); 
-                console.log('💾 Saved canvasId to localStorage');
-            } catch (e) { 
-                console.error('Failed to save canvasId:', e);
+            // Check storage space before saving
+            const storage = checkStorageSpace();
+            if (storage.percent > 80) {
+                console.warn(`⚠️ Storage is ${storage.percent}% full (${storage.used}MB used). Consider using smaller images.`);
+                showStatusToast(`Storage ${storage.percent}% full - images may not save`);
             }
-            
+
+            // IMMEDIATE local save for data safety
+            try {
+                localStorage.setItem('pinkBouquetCanvasId', canvasId);
+                console.log('💾 Saved canvasId to localStorage');
+            } catch (e) {
+                console.error('❌ Failed to save canvasId:', e);
+                if (e.name === 'QuotaExceededError') {
+                    showStatusToast('Storage full! Delete some images.');
+                }
+            }
+
             try {
                 localStorage.setItem(localCanvasKey, JSON.stringify(state.elements));
                 console.log('💾 Saved', state.elements.length, 'elements to localStorage');
             } catch (e) {
-                console.error('Failed to save elements to localStorage:', e);
+                console.error('❌ Failed to save elements to localStorage:', e);
+                if (e.name === 'QuotaExceededError') {
+                    console.error('💥 Storage quota exceeded! Data size:', (JSON.stringify(state.elements).length / 1024).toFixed(0), 'KB');
+                    showStatusToast('Storage full! Try using smaller/fewer images.');
+
+                    // Try to save to IndexedDB as fallback
+                    saveCanvasToIndexedDb(canvasId, state).then(() => {
+                        console.log('✅ Saved to IndexedDB as fallback');
+                        showStatusToast('Saved to backup storage (refresh may be needed)');
+                    }).catch(idbErr => {
+                        console.error('❌ IndexedDB fallback also failed:', idbErr);
+                        showStatusToast('SAVE FAILED - Images too large!');
+                    });
+                    return; // Don't continue with cloud save
+                }
             }
-            
+
             // Save to IndexedDB (async but fire and forget for speed)
             saveCanvasToIndexedDb(canvasId, state).catch(e => {
                 console.error('IndexedDB save failed:', e);
@@ -3832,7 +3968,7 @@
         async function restoreCanvas() {
             console.log('restoreCanvas STARTED for ID:', canvasId);
             let restoredState = null;
-            
+
             // Try IndexedDB first
             try {
                 const loaded = await loadCanvasFromIndexedDb(canvasId);
@@ -3854,11 +3990,11 @@
                             restoredState = normalizeCanvasState({ elements: parsed });
                             console.log('✓ Restored from LocalStorage:', parsed.length, 'elements');
                         }
-                    } catch (e) { 
+                    } catch (e) {
                         console.error('LocalStorage parse error:', e);
                     }
                 }
-                
+
                 // Try legacy key if current key is empty
                 if (!restoredState) {
                     const legacySaved = localStorage.getItem(legacyLocalCanvasKey);
@@ -3870,7 +4006,7 @@
                                 localStorage.setItem(localCanvasKey, JSON.stringify(restoredState.elements));
                                 console.log('✓ Migrated from legacy storage:', legacyElements.length, 'elements');
                             }
-                        } catch (e) { 
+                        } catch (e) {
                             console.error('Legacy storage parse error:', e);
                         }
                     }
@@ -3921,14 +4057,14 @@
             // Save restored state back to storage for redundancy
             if (restoredState && Array.isArray(restoredState.elements) && restoredState.elements.length > 0) {
                 console.log('💾 Saving restored state to storage...');
-                try { 
-                    localStorage.setItem(localCanvasKey, JSON.stringify(restoredState.elements)); 
-                } catch (e) { 
+                try {
+                    localStorage.setItem(localCanvasKey, JSON.stringify(restoredState.elements));
+                } catch (e) {
                     console.error('Failed to save to localStorage:', e);
                 }
-                try { 
-                    await saveCanvasToIndexedDb(canvasId, restoredState); 
-                } catch (e) { 
+                try {
+                    await saveCanvasToIndexedDb(canvasId, restoredState);
+                } catch (e) {
                     console.error('Failed to save to IndexedDB:', e);
                 }
             }
@@ -3956,11 +4092,11 @@
             // Apply the restored state
             console.log('🎨 Applying canvas state with', restoredState.elements.length, 'elements');
             applyCanvasState(restoredState);
-            
+
             // Save to history
             pushHistorySnapshot(collectCanvasState());
             updateUndoRedoButtons();
-            
+
             // Finalize
             await stabilizeAndRevealContentLayer();
             console.log('✅ Canvas restoration complete!');
