@@ -491,8 +491,16 @@
                     document.getElementById('loading').classList.add('hidden');
                     showPasswordModal();
                 } else {
-                    renderCanvas();
                     document.getElementById('loading').classList.add('hidden');
+                    // Render after paint so large media payloads do not block hiding the loader
+                    requestAnimationFrame(() => {
+                        try {
+                            renderCanvas();
+                        } catch (renderErr) {
+                            console.error('Render error:', renderErr);
+                            showError('Failed to render bouquet: ' + (renderErr.message || 'Unknown error'));
+                        }
+                    });
                 }
             } catch (err) {
                 console.error('Load error:', err);
@@ -538,7 +546,14 @@
 
             if (input === answer) {
                 document.getElementById('passwordModal').classList.add('hidden');
-                renderCanvas();
+                requestAnimationFrame(() => {
+                    try {
+                        renderCanvas();
+                    } catch (renderErr) {
+                        console.error('Render error after unlock:', renderErr);
+                        showError('Failed to render bouquet: ' + (renderErr.message || 'Unknown error'));
+                    }
+                });
             } else {
                 document.getElementById('errorText').classList.remove('hidden');
                 document.getElementById('passwordInput').value = '';
