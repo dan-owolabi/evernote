@@ -4,12 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💝 For You</title>
+    <title>💐 View Bouquet</title>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Kalam:wght@300;400;700&family=Caveat:wght@400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Kalam:wght@300;400;700&family=Caveat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap"
         rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        :root {
+            --bg-workspace: #f5f5f7;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -17,839 +22,598 @@
         }
 
         body {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #1a0a10;
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        /* Floating Hearts Background */
-        .hearts-bg {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
+            width: 100vw;
+            height: 100vh;
             overflow: hidden;
-        }
-
-        .floating-heart {
-            position: absolute;
-            bottom: -40px;
-            opacity: 0.15;
-            animation: floatUp linear infinite;
-            color: #ff4d6d;
-        }
-
-        @keyframes floatUp {
-            0% {
-                transform: translateY(0) rotate(0deg);
-                opacity: 0
-            }
-
-            10% {
-                opacity: 0.15
-            }
-
-            90% {
-                opacity: 0.15
-            }
-
-            100% {
-                transform: translateY(-105vh) rotate(360deg);
-                opacity: 0
-            }
-        }
-
-        /* Lock Screen */
-        .lock-screen {
-            position: relative;
-            z-index: 10;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-workspace);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 28px;
+        }
+
+        .workspace {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            background: var(--bg-workspace);
+        }
+
+        .canvas {
+            position: relative;
             width: 100%;
-            max-width: 400px;
-            padding: 20px;
-            animation: fadeIn 0.8s ease;
+            height: 100%;
+            background: #fdfdfd;
+            box-shadow: 0 0 100px rgba(0, 0, 0, 0.02);
+            overflow: hidden;
         }
 
-        .lock-screen.hidden {
-            display: none !important;
+        .content-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 8;
+            transform-origin: 0 0;
         }
 
-        .lock-icon {
-            width: 90px;
-            height: 90px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #ff4d6d, #c9184a);
+        .fixed-backdrop {
+            position: absolute;
+            top: 65%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 40px;
-            box-shadow: 0 0 50px rgba(255, 77, 109, 0.35);
-            animation: heartbeat 1.5s infinite;
-            color: white;
+            z-index: 1;
         }
 
-        .lock-text h1 {
-            color: #fff;
-            font-family: 'Playfair Display', serif;
-            font-style: italic;
-            font-size: 26px;
-            font-weight: 500;
-            margin-bottom: 10px;
-            text-align: center;
+        .fixed-backdrop img {
+            width: 170%;
+            height: 170%;
+            max-width: none;
+            object-fit: contain;
+            object-position: center center;
+            filter: drop-shadow(0 20px 60px rgba(0, 0, 0, 0.12));
         }
 
-        .lock-text p {
-            color: rgba(255, 200, 210, 0.6);
-            font-size: 14px;
-            font-weight: 300;
-            text-align: center;
-        }
-
-        /* Input Container */
-        .input-container {
-            width: 100%;
-            background: rgba(255, 77, 109, 0.06);
-            backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 77, 109, 0.12);
-            border-radius: 22px;
-            padding: 28px;
-            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
-        }
-
-        .security-input {
-            width: 100%;
-            padding: 14px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 77, 109, 0.3);
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-family: 'Inter', sans-serif;
-            font-size: 16px;
-            outline: none;
-            transition: all 0.2s;
-            text-align: center;
-        }
-
-        .security-input:focus {
-            border-color: #ff4d6d;
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 0 4px rgba(255, 77, 109, 0.15);
-        }
-
-        .security-input::placeholder {
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .unlock-btn {
-            width: 100%;
-            margin-top: 16px;
-            padding: 14px;
-            border-radius: 12px;
-            border: none;
-            background: #ff4d6d;
-            color: white;
-            font-weight: 600;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 15px rgba(255, 77, 109, 0.3);
-        }
-
-        .unlock-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 77, 109, 0.4);
-            background: #ff3355;
-        }
-
-        .unlock-btn:active {
-            transform: translateY(0);
-        }
-
-        .error-msg {
-            color: #ff3355;
-            font-size: 13px;
-            margin-top: 12px;
-            text-align: center;
-            opacity: 0;
-            transition: opacity 0.3s;
-            height: 20px;
-        }
-
-        .error-msg.show {
-            opacity: 1;
-        }
-
-        /* Canvas Container */
-        #canvas-container {
-            position: fixed;
-            inset: 0;
-            overflow: hidden;
-            display: none;
-            opacity: 0;
-            transition: opacity 1s ease;
-        }
-
-        #canvas-container.visible {
-            display: block;
-            opacity: 1;
-        }
-
+        /* Canvas Elements - VIEW ONLY */
         .canvas-element {
             position: absolute;
+            cursor: default;
             user-select: none;
-        }
-
-        .canvas-footer {
-            position: fixed;
-            left: clamp(16px, 3vw, 40px);
-            bottom: clamp(16px, 4vh, 40px);
-            font-family: 'Playfair Display', serif;
-            font-size: clamp(34px, 5.5vw, 64px);
-            font-style: italic;
-            font-weight: 400;
-            line-height: 1;
-            color: #1a1a1c;
-            z-index: 20;
-            pointer-events: none;
-            max-width: calc(100vw - 32px);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: none;
+            -webkit-user-select: none;
         }
 
         .el-content {
             width: 100%;
             height: 100%;
+            object-fit: contain;
             display: block;
-            border-radius: 8px;
             pointer-events: none;
         }
 
-        /* Interactive media */
-        .el-video iframe.el-content,
-        .el-music iframe.el-content {
-            pointer-events: auto;
+        /* Image frames */
+        .el-image {
+            background: #fff;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border-radius: 4px;
+            overflow: hidden;
         }
 
-        /* Specific Element Styles */
+        .el-image.frame-polaroid {
+            padding: 12px 12px 40px 12px;
+            background: #fff;
+        }
+
+        .el-image.frame-classic {
+            border: 16px solid #8b4513;
+            box-shadow: inset 0 0 0 2px #d4a574, 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .el-image.frame-modern {
+            border: 2px solid #1a1a1c;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Video */
+        .el-video {
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .el-video video,
+        .el-video iframe {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Music */
+        .el-music {
+            border-radius: 16px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #ff4d6d 0%, #c9184a 100%);
+            box-shadow: 0 8px 24px rgba(255, 77, 109, 0.3);
+        }
+
+        .el-music iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Letter envelope */
         .envelope-view {
             width: 100%;
             height: 100%;
-            background: white;
-            border-radius: 4px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .envelope-flap {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 50%;
-            background: #f8d7da;
-            clip-path: polygon(0 0, 50% 100%, 100% 0);
-            z-index: 2;
-            transform-origin: top;
-            transition: transform 0.6s;
-        }
-
-        .envelope-body {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #ffeef0;
-            clip-path: polygon(0 0, 50% 40%, 100% 0, 100% 100%, 0 100%);
-            z-index: 3;
-            pointer-events: none;
-        }
-
-        .envelope-content {
-            width: 90%;
-            height: 85%;
-            background: white;
-            position: absolute;
-            bottom: 0;
-            padding: 10px;
-            font-family: 'Caveat', cursive;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.5s;
-            z-index: 1;
-            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
-        }
-
-        .wax-seal {
-            position: absolute;
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 30px;
-            height: 30px;
-            background: #d32f2f;
-            border-radius: 50%;
-            z-index: 4;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 16px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            transition: opacity 0.3s;
-        }
-
-        .letter-viewer-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(8px);
-            z-index: 2000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .letter-sheet {
-            width: 90%;
-            max-width: 500px;
-            min-height: 60vh;
-            background: #fff0f5;
-            padding: 40px;
-            border-radius: 2px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-            font-family: 'Kalam', cursive;
-            font-size: 20px;
-            line-height: 1.6;
-            position: relative;
-            transform: scale(0.9);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            white-space: pre-wrap;
-            overflow-y: auto;
-            max-height: 85vh;
-            color: #5d0e28;
-        }
-
-        .media-viewer-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 3000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .media-content-wrapper {
-            max-width: 90vw;
-            max-height: 90vh;
-            position: relative;
-        }
-
-        .media-content-wrapper img,
-        .media-content-wrapper video {
-            max-width: 100%;
-            max-height: 90vh;
+            background: url('envelope.png') center/cover;
             border-radius: 8px;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
         }
 
-        /* Frames */
-        .frame-polaroid-pin {
-            padding: 14px 14px 50px 14px;
+        .envelope-view:hover {
+            transform: scale(1.02);
+            transition: transform 0.2s;
+        }
+
+        /* Stickers */
+        .el-sticker {
+            font-size: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
+        }
+
+        /* Password Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .modal-content {
             background: #fff;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            transform: rotate(-2deg);
+            padding: 40px;
+            border-radius: 24px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
-        .frame-polaroid-pin::after {
-            content: '';
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            width: 16px;
-            height: 16px;
-            background: radial-gradient(circle at 30% 30%, #ff6b6b, #c92a2a);
-            border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            transform: translateX(-50%);
-            z-index: 10;
+        .modal-content h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            color: #1a1a1c;
+            margin-bottom: 12px;
         }
 
-        .frame-red-gallery {
-            border: 12px solid #8a1c1c;
-            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5), 0 10px 30px rgba(0, 0, 0, 0.3);
-            border-radius: 2px;
+        .modal-content p {
+            color: #666;
+            margin-bottom: 24px;
+            font-size: 15px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid #e5e5e7;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            margin-bottom: 20px;
+            transition: border-color 0.2s;
+        }
+
+        .modal-input:focus {
+            outline: none;
+            border-color: #ff4d6d;
+        }
+
+        .modal-button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #ff4d6d 0%, #c9184a 100%);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .modal-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 77, 109, 0.4);
+        }
+
+        .error-text {
+            color: #ff4d6d;
+            font-size: 14px;
+            margin-top: 12px;
+        }
+
+        /* Letter Viewer */
+        .letter-viewer {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+
+        .letter-viewer.active {
+            display: flex;
+        }
+
+        .letter-paper {
+            background: linear-gradient(135deg, #ffe0e9 0%, #fff5f7 100%);
+            padding: 60px 40px;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             position: relative;
-            overflow: hidden;
         }
 
-        .frame-classic-polaroid {
-            padding: 12px 12px 45px 12px;
+        .letter-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            transition: all 0.2s;
+        }
+
+        .letter-close:hover {
             background: #fff;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.12);
-            transform: rotate(1deg);
+            color: #ff4d6d;
+            transform: scale(1.1);
         }
 
-        @keyframes heartbeat {
+        .letter-text {
+            font-family: 'Kalam', cursive;
+            color: #4b2c34;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.8;
+        }
 
-            0%,
+        /* Loading */
+        .loading {
+            position: fixed;
+            inset: 0;
+            background: #fdfdfd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 10001;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #ff4d6d;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
             100% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.1);
+                transform: rotate(360deg);
             }
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .loading-text {
+            margin-top: 20px;
+            color: #666;
+            font-size: 16px;
         }
 
-        @keyframes shake {
-
-            0%,
-            100% {
-                transform: translateX(0);
-            }
-
-            25% {
-                transform: translateX(-10px);
-            }
-
-            75% {
-                transform: translateX(10px);
-            }
+        /* Hide on load */
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
 
 <body>
-    <!-- Hearts Background -->
-    <div class="hearts-bg" id="heartsBg"></div>
-
-    <!-- Lock Screen -->
-    <div class="lock-screen" id="lockScreen">
-        <div class="lock-icon">🔒</div>
-        <div class="lock-text">
-            <h1 id="lockQuestion">Loading...</h1>
-            <p>Please answer the security question to unlock</p>
-        </div>
-        <div class="input-container" id="inputArea">
-            <!-- Dynamic Input Rendered Here -->
-        </div>
-        <div class="error-msg" id="errorMsg">Incorrect answer, please try again</div>
+    <!-- Loading Screen -->
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading your bouquet...</div>
     </div>
 
-    <!-- Canvas Container -->
-    <div id="canvas-container"></div>
-    <div id="canvasFooter" class="canvas-footer"></div>
-
-    <!-- Overlays -->
-    <div class="letter-viewer-overlay" id="letterViewer" onclick="if(event.target===this)closeLetterViewer()">
-        <div class="letter-sheet" id="letterContent"></div>
+    <!-- Password Modal -->
+    <div class="modal-overlay hidden" id="passwordModal">
+        <div class="modal-content">
+            <h2>🔒 Protected Bouquet</h2>
+            <p id="securityQuestion">Enter the password to view</p>
+            <input type="text" class="modal-input" id="passwordInput" placeholder="Enter password">
+            <button class="modal-button" onclick="checkPassword()">Unlock</button>
+            <div class="error-text hidden" id="errorText">Incorrect password. Try again.</div>
+        </div>
     </div>
-    <div class="media-viewer-overlay" id="mediaViewer" onclick="if(event.target===this)closeMediaViewer()">
-        <div class="media-content-wrapper" id="mediaContent"></div>
+
+    <!-- Letter Viewer -->
+    <div class="letter-viewer" id="letterViewer">
+        <button class="letter-close" onclick="closeLetterViewer()">×</button>
+        <div class="letter-paper">
+            <div class="letter-text" id="letterText"></div>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="workspace">
+        <div class="canvas" id="canvas">
+            <div class="fixed-backdrop" id="fixedBouquet">
+                <img src="Vector.svg" alt="Bouquet">
+            </div>
+            <div class="content-layer" id="contentLayer"></div>
+        </div>
     </div>
 
     <script>
-        const supabaseUrl = 'https://yahblufnafnyqoligtlw.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaGJsdWZuYWZueXFvbGlndGx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5OTQ0NjYsImV4cCI6MjA4NjU3MDQ2Nn0.ZV0aMjzTMHWThE-0x2LIoq2WxcubL67pBVNiyQPosV0';
-        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        // Supabase Setup
+        const SUPABASE_URL = 'https://yahblufnafnyqoligtlw.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaGJsdWZuYWZueXFvbGlndGx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5OTQ0NjYsImV4cCI6MjA4NjU3MDQ2Nn0.ZV0aMjzTMHWThE-0x2LIoq2WxcubL67pBVNiyQPosV0';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let canvasData = null;
         let securityConfig = null;
 
-
-
-        // --- Main Logic ---
-        function getBouquetIdFromLocation() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const fromQuery = (urlParams.get('name') || urlParams.get('id') || '').trim();
-            if (fromQuery) return fromQuery;
-
-            const path = window.location.pathname || '/';
-            const normalized = path.replace(/^\/+|\/+$/g, '');
-            if (!normalized) return '';
-            if (normalized === 'index.html' || normalized === 'viewer.html' || normalized === 'editor' || normalized === 'editor.html') return '';
-            return decodeURIComponent(normalized);
+        // Get canvas ID from URL
+        function getCanvasId() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id') || params.get('name') || window.location.pathname.split('/').pop();
         }
 
-        window.addEventListener('load', async () => {
-            const id = getBouquetIdFromLocation();
-
-            if (!id) {
-                window.location.replace('/editor');
+        // Load canvas from Supabase
+        async function loadCanvas() {
+            const canvasId = getCanvasId();
+            if (!canvasId) {
+                showError('No canvas ID provided');
                 return;
             }
 
-            // Fetch Canvas
-            let query = supabaseClient.from('canvases').select('*');
+            try {
+                const { data, error } = await supabase
+                    .from('canvases')
+                    .select('*')
+                    .eq('id', canvasId)
+                    .single();
 
-            // Check if input is UUID
-            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+                if (error) throw error;
+                if (!data) throw new Error('Canvas not found');
 
-            if (isUUID) {
-                query = query.eq('id', id);
-            } else {
-                // Revert to arrow syntax which is standard for Supabase/PostgREST
-                // This searches the 'name' key inside the JSONB column
-                query = query.eq('canvas_data->>name', id);
-            }
+                canvasData = data;
+                securityConfig = data.security;
 
-            // use maybeSingle to avoid 406 errors if multiple rows somehow match (unlikely but safer)
-            const { data, error } = await query.maybeSingle();
-
-            if (error || !data) {
-                console.error('Bouquet Load Error:', error);
-                document.getElementById('lockQuestion').textContent = 'Bouquet Not Found';
-
-                let msg = 'Could not load bouquet data.';
-                if (error && error.message) {
-                    msg = error.message;
-                } else if (!data) {
-                    msg = isUUID ? 'ID not found.' : `No bouquet found with name "${id}".`;
+                // Check if password protected
+                if (securityConfig && securityConfig.enabled) {
+                    document.getElementById('loading').classList.add('hidden');
+                    showPasswordModal();
+                } else {
+                    renderCanvas();
+                    document.getElementById('loading').classList.add('hidden');
                 }
+            } catch (err) {
+                console.error('Load error:', err);
+                showError('Failed to load bouquet: ' + err.message);
+            }
+        }
 
-                document.querySelector('.lock-text p').textContent = msg;
-                document.getElementById('inputArea').style.display = 'none';
-                return;
+        // Show password modal
+        function showPasswordModal() {
+            const modal = document.getElementById('passwordModal');
+            const question = document.getElementById('securityQuestion');
+
+            if (securityConfig.question) {
+                question.textContent = securityConfig.question;
             }
 
-            canvasData = data.canvas_data;
+            modal.classList.remove('hidden');
+            document.getElementById('passwordInput').focus();
+        }
 
-            // Backward compatibility: If array, no security
-            if (Array.isArray(canvasData)) {
-                unlock();
-            }
+        // Check password
+        function checkPassword() {
+            const input = document.getElementById('passwordInput').value.trim().toLowerCase();
+            const answer = (securityConfig.answer || '').trim().toLowerCase();
 
-            // If object, check security
-            if (canvasData.security && canvasData.security.type !== 'none') {
-                securityConfig = canvasData.security;
-                renderLockScreen();
+            if (input === answer) {
+                document.getElementById('passwordModal').classList.add('hidden');
+                renderCanvas();
             } else {
-                // If object but no security field or type is none, treat as unlocked
-                unlock();
+                document.getElementById('errorText').classList.remove('hidden');
+                document.getElementById('passwordInput').value = '';
+                document.getElementById('passwordInput').focus();
             }
-            // Floating Hearts Animation & Logic - moved inside load
-            const heartEmojis = ['❤️', '💕', '💗', '💖', '💘', '♥️', '🩷'];
-            const heartsBg = document.getElementById('heartsBg');
-            if (heartsBg) {
-                for (let i = 0; i < 20; i++) {
-                    const heart = document.createElement('span');
-                    heart.className = 'floating-heart';
-                    heart.textContent = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
-                    heart.style.left = Math.random() * 100 + '%';
-                    heart.style.fontSize = (14 + Math.random() * 20) + 'px';
-                    heart.style.animationDuration = (6 + Math.random() * 10) + 's';
-                    heart.style.animationDelay = (Math.random() * 5) + 's';
-                    heartsBg.appendChild(heart);
-                }
-            }
+        }
+
+        // Allow Enter key to submit password
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('passwordInput')?.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') checkPassword();
+            });
         });
 
-        function renderLockScreen() {
-            document.getElementById('lockQuestion').textContent = securityConfig.question || 'Security Question';
-            const area = document.getElementById('inputArea');
-            area.innerHTML = '';
+        // Render canvas elements
+        function renderCanvas() {
+            if (!canvasData || !canvasData.elements) return;
 
-            const type = securityConfig.type || 'text';
-            // Use a container div for input to make it easier to append
-            const container = document.createElement('div');
-            container.style.width = '100%';
+            const contentLayer = document.getElementById('contentLayer');
+            contentLayer.innerHTML = '';
 
-            if (type === 'date_short') {
-                container.innerHTML = '<input type="text" id="ansInput" class="security-input" placeholder="DD/MM">';
-            } else if (type === 'date_full' || type === 'date') {
-                container.innerHTML = '<input type="date" id="ansInput" class="security-input" placeholder="Select Date">';
-            } else if (type === 'pin') {
-                container.innerHTML = '<input type="number" id="ansInput" class="security-input" placeholder="Enter PIN (Numeric)">';
-            } else if (type === 'sentence') {
-                container.innerHTML = '<textarea id="ansInput" class="security-input" placeholder="Enter the phrase..." style="resize:none; height:80px;"></textarea>';
-            } else {
-                container.innerHTML = '<input type="text" id="ansInput" class="security-input" placeholder="Enter Answer">';
+            // Set background color if saved
+            if (canvasData.backgroundColor) {
+                document.body.style.background = canvasData.backgroundColor;
             }
 
-            area.innerHTML = '';
-            area.appendChild(container);
-            area.insertAdjacentHTML('beforeend', '<button class="unlock-btn" onclick="checkAnswer()">Unlock Bouquet 💝</button>');
+            // Set footer text if saved
+            if (canvasData.footerText) {
+                const backdrop = document.getElementById('fixedBouquet');
+                if (backdrop) {
+                    backdrop.dataset.footerText = canvasData.footerText;
+                }
+            }
 
-            // Allow Enter key
-            const input = document.getElementById('ansInput');
-            if (input) {
-                input.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') checkAnswer();
+            // Render each element
+            canvasData.elements.forEach(element => {
+                try {
+                    const el = createViewElement(element);
+                    if (el) contentLayer.appendChild(el);
+                } catch (err) {
+                    console.error('Failed to render element:', element, err);
+                }
+            });
+        }
+
+        // Create view-only element
+        function createViewElement(data) {
+            const el = document.createElement('div');
+            el.className = `canvas-element el-${data.type}`;
+            el.style.left = data.left || data.x || '0px';
+            el.style.top = data.top || data.y || '0px';
+            el.style.width = data.width || '200px';
+            el.style.height = data.height || '200px';
+            el.style.zIndex = data.zIndex || 10;
+
+            if (data.transform) el.style.transform = data.transform;
+            if (data.rotation) el.style.transform = `rotate(${data.rotation}deg)`;
+
+            // Apply frame class for images
+            if (data.type === 'image' && data.classes) {
+                data.classes.split(' ').forEach(cls => {
+                    if (cls.startsWith('frame-')) el.classList.add(cls);
                 });
             }
-        }
 
-        function checkAnswer() {
-            const input = document.getElementById('ansInput');
-            let val = input.value.trim().toLowerCase();
-            let correct = (securityConfig.answer || '').trim().toLowerCase();
-
-            if (securityConfig.type === 'date_short') {
-                const normalizeShortDate = (raw) => {
-                    const value = String(raw || '').trim();
-                    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-                        const [, mm, dd] = value.split('-');
-                        return `${dd}/${mm}`;
-                    }
-                    if (/^\d{2}\/\d{2}$/.test(value)) return value;
-                    if (/^\d{2}-\d{2}$/.test(value)) {
-                        const [a, b] = value.split('-');
-                        return `${b}/${a}`;
-                    }
-                    return value;
-                };
-                val = normalizeShortDate(val);
-                correct = normalizeShortDate(correct);
-            }
-
-            if (val === correct) {
-                unlock();
-            } else {
-                const err = document.getElementById('errorMsg');
-                err.classList.add('show');
-                document.querySelector('.lock-screen').style.animation = 'none';
-                setTimeout(() => document.querySelector('.lock-screen').style.animation = 'shake 0.4s ease', 10);
-                setTimeout(() => err.classList.remove('show'), 2000);
-            }
-        }
-
-        function unlock() {
-            const ls = document.getElementById('lockScreen');
-            ls.style.opacity = '0';
-            setTimeout(() => ls.classList.add('hidden'), 500);
-
-            document.getElementById('heartsBg').style.opacity = '0'; // Fade out hearts (optional, maybe keep?)
-            // User requested to remove hearts bg on unlock in previous index.html logic, so I'll follow that pattern.
-            // But let's actually change bg to the canvas bg.
-
-            document.getElementById('canvas-container').classList.add('visible');
-            renderCanvas();
-        }
-
-        function renderCanvas() {
-            const container = document.getElementById('canvas-container');
-            const elements = Array.isArray(canvasData) ? canvasData : canvasData.elements;
-
-            if (!elements) return;
-
-            elements.forEach(data => {
-                const el = document.createElement('div');
-                el.className = data.classes || `canvas-element el-${data.type}`;
-                el.style.left = data.left;
-                el.style.top = data.top;
-                el.style.width = data.width;
-                el.style.height = data.height;
-                el.style.zIndex = data.zIndex;
-                el.style.transform = data.transform || '';
-                // ... (rest of element creation)
-
-                // Construct inner HTML
-                if (data.type === 'image') {
-                    // ... (image specific)
-                }
-                // Correction: The original code used data.contentHTML directly.
-                // I need to be careful not to break existing logic.
-                // The original code:
-                // el.innerHTML = data.contentHTML; 
-                // But wait, the view in step 2193 truncated at line 600.
-                // I should assume the rest creates the element content.
-                // I will target the END of renderCanvas to add the scaling call.
-
-                el.style.left = data.left;
-                el.style.top = data.top;
-                el.style.width = data.width;
-                el.style.height = data.height;
-                el.style.zIndex = data.zIndex;
-                el.style.transform = data.transform;
+            // Render content based on type
+            if (data.contentHTML) {
                 el.innerHTML = data.contentHTML;
-
-                // Dataset properties for interaction
-                if (data.type === 'letter') {
-                    el.dataset.letterText = data.letterText;
-                    el.dataset.letterBg = data.letterBg;
-                    el.dataset.letterFontSize = data.letterFontSize;
-                    el.dataset.letterTextAlign = data.letterTextAlign;
-
-                    // Add click handler
-                    el.onclick = () => openLetterViewer(data.letterText, data.letterBg, data.letterFontSize, data.letterTextAlign);
-                } else if (data.type === 'video' || data.type === 'image') {
-                    el.onclick = () => openMediaViewer(el);
-                } else if (data.type === 'music') {
-                    // Click play logic
-                    el.onclick = () => {
-                        const audio = el.querySelector('audio');
-                        if (audio) { if (audio.paused) audio.play(); else audio.pause(); }
-                    };
-                }
-
-                container.appendChild(el);
-            });
-
-            // Set background color if present
-            if (!Array.isArray(canvasData) && canvasData.bgColor) {
-                document.body.style.background = canvasData.bgColor;
             } else {
-                document.body.style.background = '#fafafa'; // Default
+                switch (data.type) {
+                    case 'image':
+                        const img = document.createElement('img');
+                        img.className = 'el-content';
+                        img.src = data.src || data.content;
+                        el.appendChild(img);
+                        break;
+
+                    case 'video':
+                        if (data.isEmbed || data.src?.includes('youtube') || data.src?.includes('youtu.be')) {
+                            const iframe = document.createElement('iframe');
+                            iframe.src = data.src || data.content;
+                            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+                            iframe.allowFullscreen = true;
+                            iframe.className = 'el-content';
+                            el.appendChild(iframe);
+                        } else {
+                            const video = document.createElement('video');
+                            video.src = data.src || data.content;
+                            video.controls = true;
+                            video.className = 'el-content';
+                            el.appendChild(video);
+                        }
+                        break;
+
+                    case 'music':
+                        const audio = document.createElement('audio');
+                        audio.src = data.src || data.content;
+                        audio.controls = true;
+                        audio.className = 'el-content';
+                        el.appendChild(audio);
+                        break;
+
+                    case 'letter':
+                        const envelope = document.createElement('div');
+                        envelope.className = 'envelope-view';
+                        envelope.onclick = () => openLetter(data);
+                        el.appendChild(envelope);
+                        if (data.letterBg) el.style.background = data.letterBg;
+                        break;
+
+                    case 'sticker':
+                        el.textContent = data.content || data.letterText || '❤️';
+                        break;
+                }
             }
 
-            const footerText = (!Array.isArray(canvasData) && typeof canvasData.footerText === 'string')
-                ? canvasData.footerText
-                : '';
-            renderFooter(footerText);
-
-            // Auto-scale to fit
-            setTimeout(fitCanvasToScreen, 50); // Small delay to ensure layout
+            return el;
         }
 
-        function renderFooter(text) {
-            const footer = document.getElementById('canvasFooter');
-            if (!footer) return;
-            const clean = (text || '').trim();
-            if (!clean) {
-                footer.style.display = 'none';
-                footer.textContent = '';
-                return;
+        // Open letter viewer
+        function openLetter(data) {
+            const viewer = document.getElementById('letterViewer');
+            const textEl = document.getElementById('letterText');
+
+            textEl.textContent = data.letterText || '';
+            textEl.style.fontSize = data.letterFontSize === 'small' ? '16px' : data.letterFontSize === 'big' ? '26px' : '20px';
+            textEl.style.textAlign = data.letterTextAlign || 'center';
+
+            if (data.letterBg) {
+                viewer.querySelector('.letter-paper').style.background = data.letterBg;
             }
-            footer.textContent = clean;
-            footer.style.display = 'block';
+
+            viewer.classList.add('active');
         }
 
-        // --- Viewers ---
-        function openLetterViewer(text, bg, size, align) {
-            const v = document.getElementById('letterViewer');
-            const c = document.getElementById('letterContent');
-            v.style.display = 'flex';
-            setTimeout(() => v.style.opacity = '1', 10);
-            c.style.background = bg;
-            c.style.fontSize = size === 'small' ? '16px' : (size === 'large' ? '24px' : '20px');
-            c.style.textAlign = align;
-            c.innerText = text;
-        }
-
+        // Close letter viewer
         function closeLetterViewer() {
-            const v = document.getElementById('letterViewer');
-            v.style.opacity = '0';
-            setTimeout(() => v.style.display = 'none', 300);
+            document.getElementById('letterViewer').classList.remove('active');
         }
 
-        function openMediaViewer(el) {
-            const v = document.getElementById('mediaViewer');
-            const c = document.getElementById('mediaContent');
-            const img = el.querySelector('img');
-            const vid = el.querySelector('video');
+        // Click outside to close
+        document.getElementById('letterViewer')?.addEventListener('click', (e) => {
+            if (e.target.id === 'letterViewer') closeLetterViewer();
+        });
 
-            c.innerHTML = '';
-            if (img) {
-                const i = document.createElement('img');
-                i.src = img.src;
-                c.appendChild(i);
-            } else if (vid) {
-                const video = document.createElement('video');
-                video.src = vid.querySelector('source').src;
-                video.controls = true;
-                video.autoplay = true;
-                c.appendChild(video);
-            }
-            v.style.display = 'flex';
+        // Show error
+        function showError(message) {
+            const loading = document.getElementById('loading');
+            loading.innerHTML = `
+                <div style="text-align:center; padding:40px;">
+                    <div style="font-size:64px; margin-bottom:20px;">💔</div>
+                    <h2 style="color:#1a1a1c; margin-bottom:12px;">Oops!</h2>
+                    <p style="color:#666; font-size:16px;">${message}</p>
+                </div>
+            `;
         }
 
-        function closeMediaViewer() {
-            const v = document.getElementById('mediaViewer');
-            v.style.display = 'none';
-            document.getElementById('mediaContent').innerHTML = '';
-        }
-
-        function fitCanvasToScreen() {
-            const container = document.getElementById('canvas-container');
-            const elements = container.querySelectorAll('.canvas-element');
-            if (elements.length === 0) return;
-
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-
-            elements.forEach(el => {
-                const x = parseFloat(el.style.left) || 0;
-                const y = parseFloat(el.style.top) || 0;
-                const w = el.offsetWidth;
-                const h = el.offsetHeight;
-
-                minX = Math.min(minX, x);
-                minY = Math.min(minY, y);
-                maxX = Math.max(maxX, x + w);
-                maxY = Math.max(maxY, y + h);
-            });
-
-            // Add some padding
-            const padding = 40;
-            const contentWidth = maxX - minX + padding * 2;
-            const contentHeight = maxY - minY + padding * 2;
-
-            // Screen dimensions
-            const screenW = window.innerWidth;
-            const screenH = window.innerHeight;
-
-            // Calculate scale
-            const scaleX = screenW / contentWidth;
-            const scaleY = screenH / contentHeight;
-            const scale = Math.min(scaleX, scaleY, 1);
-
-            const finalScale = Math.min(scale, 1.2); // Cap scaling up slightly
-
-            // Transform origin top-left
-            container.style.transformOrigin = '0 0';
-
-            const contentVisualWidth = (maxX - minX) * finalScale;
-            const contentVisualHeight = (maxY - minY) * finalScale;
-
-            const offsetX = (screenW - contentVisualWidth) / 2 - minX * finalScale;
-            const offsetY = (screenH - contentVisualHeight) / 2 - minY * finalScale;
-
-            container.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${finalScale})`;
-        }
-
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
+        // Start loading
+        loadCanvas();
     </script>
 </body>
 
