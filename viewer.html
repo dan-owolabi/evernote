@@ -408,13 +408,32 @@
         let canvasData = null;
         let securityConfig = null;
 
+        function withTimeout(promise, ms, message) {
+            return Promise.race([
+                promise,
+                new Promise((_, reject) => setTimeout(() => reject(new Error(message || 'Request timeout')), ms))
+            ]);
+        }
+
         // Get canvas ID from URL
         function getCanvasId() {
             const params = new URLSearchParams(window.location.search);
-            const val = params.get('id') || params.get('name') || window.location.pathname.split('/').pop();
-            // Filter out system files
-            if (val === 'viewer.html' || val === 'index.html' || val === 'editor' || val === 'viewer') return null;
-            return val;
+            const fromQuery = (params.get('id') || params.get('name') || '').trim();
+            if (fromQuery) return fromQuery;
+
+            const pathname = window.location.pathname || '/';
+            const normalized = pathname.replace(/^\/+|\/+$/g, '');
+            if (!normalized) return null;
+
+            const pathParts = normalized.split('/');
+            const lastPart = decodeURIComponent(pathParts[pathParts.length - 1] || '').trim();
+
+            // Filter out system routes/files
+            if (!lastPart || lastPart === 'viewer.html' || lastPart === 'index.html' || lastPart === 'editor' || lastPart === 'viewer') {
+                return null;
+            }
+
+            return lastPart;
         }
 
         // Load canvas from Supabase
@@ -452,16 +471,23 @@
                 // Get the most recently updated one
                 query = query.order('updated_at', { ascending: false }).limit(1);
 
-                const { data, error } = await query.maybeSingle();
+                const { data, error } = await withTimeout(query.maybeSingle(), 15000, 'Fetch timed out');
 
                 if (error) throw error;
                 if (!data) throw new Error('Bouquet not found');
 
                 canvasData = data.canvas_data || data; // Handle both structure types
-                securityConfig = canvasData.security;
+                if (Array.isArray(canvasData)) {
+                    canvasData = { elements: canvasData };
+                }
+                securityConfig = canvasData?.security || null;
+                const hasSecurityType = !!(securityConfig && securityConfig.type && securityConfig.type !== 'none');
+                const isEnabled = !!(securityConfig && securityConfig.enabled);
+                const hasAnswer = !!(securityConfig && String(securityConfig.answer || '').trim());
+                const requiresPassword = isEnabled || hasSecurityType || hasAnswer;
 
                 // Check if password protected
-                if (securityConfig && securityConfig.enabled) {
+                if (requiresPassword) {
                     document.getElementById('loading').classList.add('hidden');
                     showPasswordModal();
                 } else {
@@ -489,8 +515,26 @@
 
         // Check password
         function checkPassword() {
-            const input = document.getElementById('passwordInput').value.trim().toLowerCase();
-            const answer = (securityConfig.answer || '').trim().toLowerCase();
+            let input = document.getElementById('passwordInput').value.trim().toLowerCase();
+            let answer = (securityConfig?.answer || '').trim().toLowerCase();
+
+            if ((securityConfig?.type || '') === 'date_short') {
+                const normalizeShortDate = (raw) => {
+                    const value = String(raw || '').trim();
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+                        const [, mm, dd] = value.split('-');
+                        return `${dd}/${mm}`;
+                    }
+                    if (/^\d{2}\/\d{2}$/.test(value)) return value;
+                    if (/^\d{2}-\d{2}$/.test(value)) {
+                        const [a, b] = value.split('-');
+                        return `${b}/${a}`;
+                    }
+                    return value;
+                };
+                input = normalizeShortDate(input).toLowerCase();
+                answer = normalizeShortDate(answer).toLowerCase();
+            }
 
             if (input === answer) {
                 document.getElementById('passwordModal').classList.add('hidden');
@@ -517,8 +561,8 @@
             contentLayer.innerHTML = '';
 
             // Set background color if saved
-            if (canvasData.backgroundColor) {
-                document.body.style.background = canvasData.backgroundColor;
+            if (canvasData.backgroundColor || canvasData.bgColor) {
+                document.body.style.background = canvasData.backgroundColor || canvasData.bgColor;
             }
 
             // Set footer text if saved
