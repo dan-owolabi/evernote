@@ -448,7 +448,11 @@
                     query = query.eq('canvas_data->>name', canvasId);
                 }
 
-                const { data, error } = await query.single();
+                // Handle potential duplicates (if multiple bouquets have same name)
+                // Get the most recently updated one
+                query = query.order('updated_at', { ascending: false }).limit(1);
+
+                const { data, error } = await query.maybeSingle();
 
                 if (error) throw error;
                 if (!data) throw new Error('Bouquet not found');
