@@ -407,6 +407,8 @@
 
         let canvasData = null;
         let securityConfig = null;
+        let resolvedRowId = null;
+        let requestedCanvasId = null;
 
         function withTimeout(promise, ms, message) {
             return Promise.race([
@@ -437,6 +439,48 @@
         }
 
         // Load canvas from Supabase
+        function buildLookupQuery(selectClause, canvasId) {
+            let query = supabase.from('canvases').select(selectClause);
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canvasId);
+
+            if (isUUID) {
+                query = query.eq('id', canvasId);
+            } else {
+                query = query.eq('canvas_data->>name', canvasId).order('updated_at', { ascending: false }).limit(1);
+            }
+            return query;
+        }
+
+        async function fetchCanvasMeta(canvasId) {
+            const metaQuery = buildLookupQuery('id, updated_at, security:canvas_data->security', canvasId);
+            const { data, error } = await withTimeout(metaQuery.maybeSingle(), 12000, 'Metadata fetch timed out');
+            if (error) throw error;
+            if (!data) throw new Error('Bouquet not found');
+
+            resolvedRowId = data.id || null;
+            securityConfig = data.security || null;
+        }
+
+        async function fetchFullCanvasData() {
+            if (!requestedCanvasId) throw new Error('No bouquet ID found. Please check your link.');
+
+            let fullQuery;
+            if (resolvedRowId) {
+                fullQuery = supabase.from('canvases').select('*').eq('id', resolvedRowId).limit(1);
+            } else {
+                fullQuery = buildLookupQuery('*', requestedCanvasId);
+            }
+
+            const { data, error } = await withTimeout(fullQuery.maybeSingle(), 30000, 'Bouquet fetch timed out');
+            if (error) throw error;
+            if (!data) throw new Error('Bouquet not found');
+
+            canvasData = data.canvas_data || data;
+            if (Array.isArray(canvasData)) {
+                canvasData = { elements: canvasData };
+            }
+        }
+
         async function loadCanvas() {
             // Safety check
             if (!supabase) {
@@ -444,64 +488,37 @@
                 return;
             }
 
-            const canvasId = getCanvasId();
-            if (!canvasId) {
-                // If no ID found (e.g. just /viewer.html), try to redirect or show valid state
-                // For now, show error
+            requestedCanvasId = getCanvasId();
+            if (!requestedCanvasId) {
                 showError('No bouquet ID found. Please check your link.');
                 return;
             }
 
             try {
-                let query = supabase
-                    .from('canvases')
-                    .select('*');
+                // Lightweight preflight so password prompt is not blocked by huge media payloads
+                await fetchCanvasMeta(requestedCanvasId);
 
-                // Check if UUID
-                const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canvasId);
-
-                if (isUUID) {
-                    query = query.eq('id', canvasId);
-                } else {
-                    // Search by name in JSON data
-                    query = query.eq('canvas_data->>name', canvasId);
-                }
-
-                // Handle potential duplicates (if multiple bouquets have same name)
-                // Get the most recently updated one
-                query = query.order('updated_at', { ascending: false }).limit(1);
-
-                const { data, error } = await withTimeout(query.maybeSingle(), 15000, 'Fetch timed out');
-
-                if (error) throw error;
-                if (!data) throw new Error('Bouquet not found');
-
-                canvasData = data.canvas_data || data; // Handle both structure types
-                if (Array.isArray(canvasData)) {
-                    canvasData = { elements: canvasData };
-                }
-                securityConfig = (canvasData && canvasData.security) ? canvasData.security : null;
                 const hasSecurityType = !!(securityConfig && securityConfig.type && securityConfig.type !== 'none');
                 const isEnabled = !!(securityConfig && securityConfig.enabled);
                 const hasAnswer = !!(securityConfig && String(securityConfig.answer || '').trim());
                 const requiresPassword = isEnabled || hasSecurityType || hasAnswer;
 
-                // Check if password protected
                 if (requiresPassword) {
                     document.getElementById('loading').classList.add('hidden');
                     showPasswordModal();
-                } else {
-                    document.getElementById('loading').classList.add('hidden');
-                    // Render after paint so large media payloads do not block hiding the loader
-                    requestAnimationFrame(() => {
-                        try {
-                            renderCanvas();
-                        } catch (renderErr) {
-                            console.error('Render error:', renderErr);
-                            showError('Failed to render bouquet: ' + (renderErr.message || 'Unknown error'));
-                        }
-                    });
+                    return;
                 }
+
+                await fetchFullCanvasData();
+                document.getElementById('loading').classList.add('hidden');
+                requestAnimationFrame(() => {
+                    try {
+                        renderCanvas();
+                    } catch (renderErr) {
+                        console.error('Render error:', renderErr);
+                        showError('Failed to render bouquet: ' + (renderErr.message || 'Unknown error'));
+                    }
+                });
             } catch (err) {
                 console.error('Load error:', err);
                 showError('Failed to load bouquet: ' + (err.message || 'Unknown error'));
@@ -522,7 +539,7 @@
         }
 
         // Check password
-        function checkPassword() {
+        async function checkPassword() {
             let input = document.getElementById('passwordInput').value.trim().toLowerCase();
             let answer = ((securityConfig && securityConfig.answer) || '').trim().toLowerCase();
 
@@ -546,14 +563,28 @@
 
             if (input === answer) {
                 document.getElementById('passwordModal').classList.add('hidden');
-                requestAnimationFrame(() => {
-                    try {
-                        renderCanvas();
-                    } catch (renderErr) {
-                        console.error('Render error after unlock:', renderErr);
-                        showError('Failed to render bouquet: ' + (renderErr.message || 'Unknown error'));
-                    }
-                });
+                const loading = document.getElementById('loading');
+                if (loading) {
+                    loading.classList.remove('hidden');
+                    const textEl = loading.querySelector('.loading-text');
+                    if (textEl) textEl.textContent = 'Opening your bouquet...';
+                }
+
+                try {
+                    await fetchFullCanvasData();
+                    if (loading) loading.classList.add('hidden');
+                    requestAnimationFrame(() => {
+                        try {
+                            renderCanvas();
+                        } catch (renderErr) {
+                            console.error('Render error after unlock:', renderErr);
+                            showError('Failed to render bouquet: ' + (renderErr.message || 'Unknown error'));
+                        }
+                    });
+                } catch (err) {
+                    console.error('Post-unlock load error:', err);
+                    showError('Failed to load bouquet after unlock: ' + (err.message || 'Unknown error'));
+                }
             } else {
                 document.getElementById('errorText').classList.remove('hidden');
                 document.getElementById('passwordInput').value = '';
