@@ -639,17 +639,33 @@
         // Show error
         function showError(message) {
             const loading = document.getElementById('loading');
-            loading.innerHTML = `
+            if (loading) {
+                loading.innerHTML = `
                 <div style="text-align:center; padding:40px;">
                     <div style="font-size:64px; margin-bottom:20px;">💔</div>
                     <h2 style="color:#1a1a1c; margin-bottom:12px;">Oops!</h2>
                     <p style="color:#666; font-size:16px;">${message}</p>
+                    <button onclick="window.location.reload()" style="margin-top:20px; padding:10px 20px; border-radius:8px; border:none; background:#eee; cursor:pointer;">Try Again</button>
                 </div>
             `;
+                loading.classList.remove('hidden');
+            }
         }
 
-        // Start loading
-        loadCanvas();
+        // Start loading with timeout
+        const loadTimeout = setTimeout(() => {
+            const loading = document.getElementById('loading');
+            if (loading && !loading.classList.contains('hidden')) {
+                showError('Connection timed out. Please check your internet or try refreshing.');
+            }
+        }, 15000); // 15 seconds timeout
+
+        loadCanvas().then(() => {
+            clearTimeout(loadTimeout);
+        }).catch(err => {
+            clearTimeout(loadTimeout);
+            showError('Unexpected error: ' + err.message);
+        });
     </script>
 </body>
 
