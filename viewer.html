@@ -411,7 +411,10 @@
         // Get canvas ID from URL
         function getCanvasId() {
             const params = new URLSearchParams(window.location.search);
-            return params.get('id') || params.get('name') || window.location.pathname.split('/').pop();
+            const val = params.get('id') || params.get('name') || window.location.pathname.split('/').pop();
+            // Filter out system files
+            if (val === 'viewer.html' || val === 'index.html' || val === 'editor' || val === 'viewer') return null;
+            return val;
         }
 
         // Load canvas from Supabase
@@ -424,22 +427,34 @@
 
             const canvasId = getCanvasId();
             if (!canvasId) {
-                showError('No canvas ID provided');
+                // If no ID found (e.g. just /viewer.html), try to redirect or show valid state
+                // For now, show error
+                showError('No bouquet ID found. Please check your link.');
                 return;
             }
 
             try {
-                const { data, error } = await supabase
+                let query = supabase
                     .from('canvases')
-                    .select('*')
-                    .eq('id', canvasId)
-                    .single();
+                    .select('*');
+
+                // Check if UUID
+                const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canvasId);
+
+                if (isUUID) {
+                    query = query.eq('id', canvasId);
+                } else {
+                    // Search by name in JSON data
+                    query = query.eq('canvas_data->>name', canvasId);
+                }
+
+                const { data, error } = await query.single();
 
                 if (error) throw error;
-                if (!data) throw new Error('Canvas not found');
+                if (!data) throw new Error('Bouquet not found');
 
-                canvasData = data;
-                securityConfig = data.security;
+                canvasData = data.canvas_data || data; // Handle both structure types
+                securityConfig = canvasData.security;
 
                 // Check if password protected
                 if (securityConfig && securityConfig.enabled) {
@@ -451,7 +466,7 @@
                 }
             } catch (err) {
                 console.error('Load error:', err);
-                showError('Failed to load bouquet: ' + err.message);
+                showError('Failed to load bouquet: ' + (err.message || 'Unknown error'));
             }
         }
 
