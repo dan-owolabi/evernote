@@ -1,0 +1,36 @@
+{
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/editor.html"
+    },
+    {
+      "source": "/index",
+      "destination": "/editor.html"
+    },
+    {
+      "source": "/index.html",
+      "destination": "/editor.html"
+    },
+    {
+      "source": "/editor",
+      "destination": "/editor.html"
+    },
+    {
+      "source": "/editor.html",
+      "destination": "/editor.html"
+    },
+    {
+      "source": "/viewer",
+      "destination": "/viewer.html"
+    },
+    {
+      "source": "/viewer.html",
+      "destination": "/viewer.html"
+    },
+    {
+      "source": "/:id((?!.*\\..*).*)",
+      "destination": "/viewer.html"
+    }
+  ]
+}
