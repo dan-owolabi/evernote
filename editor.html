@@ -1246,28 +1246,6 @@
             background: #000;
             transform: translateY(-1px);
         }
-
-        .status-toast {
-            position: fixed;
-            top: 84px;
-            right: 24px;
-            z-index: 6000;
-            background: rgba(0, 0, 0, 0.88);
-            color: #fff;
-            padding: 10px 14px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 500;
-            opacity: 0;
-            transform: translateY(-6px);
-            transition: opacity 0.18s ease, transform 0.18s ease;
-            pointer-events: none;
-        }
-
-        .status-toast.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
     </style>
 
 </head>
@@ -1490,6 +1468,11 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: none;
             backdrop-filter: blur(8px);
+            max-width: 90vw;
+            width: auto;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .status-toast.active {
@@ -2104,7 +2087,7 @@
                     canvas_data: dataToSave,
                     updated_at: new Date().toISOString()
                 }, { onConflict: 'id' });
-            const { error } = await withTimeout(writeQuery, 8000, 'Publish timed out');
+            const { error } = await withTimeout(writeQuery, 30000, 'Publish timed out');
             if (error) throw new Error(error.message || 'Publish failed.');
             return resolvedName;
         }
@@ -3097,15 +3080,9 @@
         }
 
         function showStatusToast(msg) {
-            let t = document.querySelector('.status-toast');
-            if (!t) {
-                t = document.createElement('div');
-                t.className = 'status-toast';
-                document.body.appendChild(t);
-            }
-            t.textContent = msg;
-            t.classList.add('active');
-            setTimeout(() => t.classList.remove('active'), 3000);
+            // Toast notifications disabled per user request
+            // Saving still happens in background, just no popup
+            return;
         }
 
         function setupDropzone(id, type) {
