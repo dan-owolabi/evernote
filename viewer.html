@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💐 View Bouquet</title>
+    <title>💝 For You</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Kalam:wght@300;400;700&family=Caveat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap"
         rel="stylesheet">
@@ -12,7 +12,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --bg-workspace: #f5f5f7;
+            --primary: #c9184a;
+            --primary-light: #ff4d6d;
+            --bg-workspace: #f5f5f5;
         }
 
         * {
@@ -31,7 +33,9 @@
             flex-direction: column;
         }
 
-        /* ═══ WORKSPACE - Exact copy from editor ═══ */
+        /* ═══════════════════════════════
+           CANVAS - EXACT COPY FROM EDITOR
+           ═══════════════════════════════ */
         .workspace {
             flex: 1;
             overflow: hidden;
@@ -44,6 +48,7 @@
             width: 100%;
             height: 100%;
             background: #fdfdfd;
+            box-shadow: 0 0 100px rgba(0, 0, 0, 0.02);
             overflow: hidden;
         }
 
@@ -74,177 +79,226 @@
             max-width: none;
             object-fit: contain;
             object-position: center center;
+            transform: none;
             filter: drop-shadow(0 20px 60px rgba(0, 0, 0, 0.12));
         }
 
-        /* ═══ CANVAS ELEMENTS - Exact copy from editor ═══ */
+        /* ═══════════════════════════════
+           CANVAS ELEMENTS - EXACT COPY
+           ═══════════════════════════════ */
         .canvas-element {
             position: absolute;
-            cursor: default;
+            z-index: 10;
             user-select: none;
-            -webkit-user-select: none;
+            cursor: default;
         }
 
-        .el-image {
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .el-image img.el-content,
-        .el-video video,
-        .el-video iframe {
+        .el-content {
             width: 100%;
             height: 100%;
             display: block;
-            object-fit: contain;
-            pointer-events: auto;
-        }
-
-        .el-music {
-            border-radius: 16px;
-            overflow: hidden;
-        }
-
-        .el-music iframe.el-content {
-            pointer-events: auto;
-            width: 100%;
-            height: 100%;
+            border-radius: 8px;
             border: none;
+            pointer-events: none;
         }
 
-        .el-music audio {
-            width: 100%;
+        /* IMAGE FRAMES - exact from editor */
+        .frame-polaroid-pin {
+            background: #fff;
+            padding: 10px 10px 40px 10px;
+            border-radius: 3px;
+            box-shadow: 2px 4px 16px rgba(0, 0, 0, 0.18), 0 1px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .el-sticker {
-            font-size: 64px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .frame-polaroid-pin .el-content {
+            border-radius: 0;
         }
 
-        /* ═══ IMAGE FRAMES - Exact copy from editor ═══ */
+        .frame-polaroid-pin::after {
+            content: '\1F4CC';
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            font-size: 24px;
+            z-index: 30;
+            filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+            transform: rotate(15deg);
+        }
+
+        .frame-red-gallery {
+            background: #fff;
+            padding: 20px;
+            border: 5px solid #c41230;
+            border-radius: 2px;
+            box-shadow: 4px 6px 20px rgba(0, 0, 0, 0.22), inset 0 0 0 1px rgba(196, 18, 48, 0.3);
+        }
+
+        .frame-red-gallery .el-content {
+            border-radius: 0;
+        }
+
+        .frame-classic-polaroid {
+            background: #fff;
+            padding: 12px 12px 48px 12px;
+            border-radius: 2px;
+            box-shadow: 3px 5px 18px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .frame-classic-polaroid .el-content {
+            border-radius: 0;
+        }
+
         .frame-polaroid {
+            padding: 4% 4% 14% 4% !important;
             background: #fff !important;
-            padding: 12px 12px 48px 12px !important;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
-        }
-
-        .frame-polaroid img {
-            object-fit: cover !important;
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1) !important;
             border-radius: 2px !important;
         }
 
-        .frame-classic {
-            background: #fff !important;
-            border: 4px solid #c9a96e !important;
-            box-shadow: inset 0 0 0 6px #8b6914, 0 8px 24px rgba(0, 0, 0, 0.18) !important;
-            padding: 8px !important;
+        .frame-rounded {
+            border-radius: 24px;
+            overflow: hidden;
         }
 
-        .frame-classic img {
-            object-fit: cover !important;
+        .frame-rounded .el-content {
+            border-radius: 24px;
         }
 
-        .frame-modern {
-            background: #fff !important;
-            border: 2px solid #1a1a1c !important;
-            padding: 0 !important;
+        .frame-circle {
+            border-radius: 50%;
+            overflow: hidden;
         }
 
-        .frame-modern img {
-            object-fit: cover !important;
+        .frame-circle .el-content {
+            border-radius: 50%;
         }
 
         .frame-shadow {
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25) !important;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3) !important;
         }
 
-        .frame-rounded {
-            border-radius: 16px !important;
-            overflow: hidden !important;
+        /* Music */
+        .el-music iframe.el-content {
+            pointer-events: auto;
         }
 
-        /* ═══ LETTER ENVELOPE ═══ */
+        /* Letter */
+        .el-letter {
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
         .envelope-view {
             width: 100%;
             height: 100%;
-            background: url('envelope.png') center/cover no-repeat;
+            background: url('envelope.png') center/cover;
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             cursor: pointer;
-            transition: transform 0.2s;
         }
 
-        .envelope-view:hover {
-            transform: scale(1.02);
+        /* Sticker */
+        .el-sticker {
+            font-size: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* ═══ LETTER VIEWER OVERLAY ═══ */
+        /* ═══════════════════════════════
+           LETTER VIEWER - EXACT FROM EDITOR
+           ═══════════════════════════════ */
         .letter-viewer-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(12px);
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 6000;
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 9999;
-            padding: 20px;
+            cursor: pointer;
         }
 
-        .letter-viewer-overlay.open {
+        .letter-viewer-overlay.active {
             display: flex;
+        }
+
+        .letter-editor-fullscreen {
+            width: 45vw;
+            min-width: 340px;
+            max-width: 560px;
+            height: 92vh;
+            border-radius: 24px;
+            padding: 48px 32px 32px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 30px 100px rgba(0, 0, 0, 0.3);
+            animation: letterSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: default;
+        }
+
+        @keyframes letterSlideUp {
+            from {
+                transform: translateY(40px) scale(0.95);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
         }
 
         .letter-paper-card {
-            background: linear-gradient(135deg, #ffe0e9 0%, #fff5f7 100%);
-            padding: 60px 40px 40px;
-            border-radius: 16px;
-            max-width: 560px;
             width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            flex: 1;
+            background: #fff0f5;
+            background-image: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.4) 0%, transparent 100%);
+            border-radius: 20px;
+            padding: 40px 32px;
             position: relative;
-        }
-
-        .letter-close-btn {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.8);
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: #555;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 182, 193, 0.3);
             display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-            transition: all 0.2s;
+            flex-direction: column;
+            overflow: visible;
         }
 
-        .letter-close-btn:hover {
-            background: #fff;
-            color: #ff4d6d;
-            transform: scale(1.1);
+        .letter-paper-card .texture {
+            position: absolute;
+            inset: 0;
+            opacity: 0.05;
+            pointer-events: none;
+            background-image: url('https://www.transparenttextures.com/patterns/natural-paper.png');
+            border-radius: 20px;
         }
 
-        .letter-body-text {
+        .letter-textarea {
+            width: 100%;
+            min-height: 200px;
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
             font-family: 'Kalam', cursive;
+            font-size: 18px;
+            line-height: 1.6;
             color: #4b2c34;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            line-height: 1.8;
-            font-size: 20px;
             text-align: center;
+            resize: none;
+            z-index: 2;
+            position: relative;
+            white-space: pre-wrap;
+            overflow: auto;
         }
 
-        /* ═══ FLOATING HEARTS BACKGROUND ═══ */
+        /* ═══════════════════════════════
+           LOCK SCREEN
+           ═══════════════════════════════ */
         .hearts-bg {
             position: fixed;
             inset: 0;
@@ -258,13 +312,11 @@
             bottom: -60px;
             opacity: 0;
             animation: floatUp linear infinite;
-            color: #ff4d6d;
-            font-size: 20px;
         }
 
         @keyframes floatUp {
             0% {
-                transform: translateY(0) scale(1) rotate(0deg);
+                transform: translateY(0) scale(1);
                 opacity: 0;
             }
 
@@ -273,167 +325,150 @@
             }
 
             90% {
-                opacity: 0.15;
+                opacity: 0.12;
             }
 
             100% {
-                transform: translateY(-110vh) scale(0.6) rotate(20deg);
+                transform: translateY(-110vh) scale(0.5);
                 opacity: 0;
             }
         }
 
-        /* ═══ LOCK SCREEN ═══ */
         .lock-screen {
             position: fixed;
             inset: 0;
-            background: radial-gradient(ellipse at center, #2d0a18 0%, #1a0a10 60%, #0d0508 100%);
+            background: radial-gradient(ellipse at 50% 40%, #2a0d17 0%, #180810 60%, #0d0508 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 10000;
             flex-direction: column;
-            gap: 28px;
+            gap: 24px;
             padding: 24px;
-            animation: fadeIn 0.6s ease;
         }
 
         .lock-screen.hidden {
             display: none;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-
-        /* Beating heart icon */
-        .lock-icon {
+        /* Beating heart */
+        .lock-heart-wrap {
             position: relative;
-            width: 100px;
-            height: 100px;
+            width: 110px;
+            height: 110px;
             display: flex;
             align-items: center;
             justify-content: center;
+            margin-bottom: 8px;
         }
 
-        .heart-pulse {
-            font-size: 72px;
-            animation: heartbeat 1.4s ease-in-out infinite;
-            filter: drop-shadow(0 0 20px rgba(255, 77, 109, 0.7));
-            display: block;
+        .lock-heart-emoji {
+            font-size: 70px;
             line-height: 1;
+            animation: heartbeat 1.5s ease-in-out infinite;
+            filter: drop-shadow(0 0 18px rgba(255, 77, 109, 0.7));
+            position: relative;
+            z-index: 2;
         }
 
         @keyframes heartbeat {
             0% {
                 transform: scale(1);
-                filter: drop-shadow(0 0 12px rgba(255, 77, 109, 0.5));
             }
 
             14% {
-                transform: scale(1.18);
-                filter: drop-shadow(0 0 28px rgba(255, 77, 109, 0.9));
+                transform: scale(1.2);
+                filter: drop-shadow(0 0 30px rgba(255, 77, 109, 1));
             }
 
             28% {
                 transform: scale(1);
-                filter: drop-shadow(0 0 12px rgba(255, 77, 109, 0.5));
             }
 
             42% {
                 transform: scale(1.12);
-                filter: drop-shadow(0 0 22px rgba(255, 77, 109, 0.8));
+                filter: drop-shadow(0 0 22px rgba(255, 77, 109, 0.85));
             }
 
             70% {
                 transform: scale(1);
-                filter: drop-shadow(0 0 12px rgba(255, 77, 109, 0.5));
+                filter: drop-shadow(0 0 18px rgba(255, 77, 109, 0.7));
             }
 
             100% {
                 transform: scale(1);
-                filter: drop-shadow(0 0 12px rgba(255, 77, 109, 0.5));
             }
         }
 
-        /* Ripple rings around heart */
-        .heart-ring {
+        .lock-ring {
             position: absolute;
             border-radius: 50%;
-            border: 2px solid rgba(255, 77, 109, 0.3);
-            animation: ripple 2s ease-out infinite;
+            border: 1.5px solid rgba(255, 77, 109, 0.35);
+            animation: lockRipple 2.2s ease-out infinite;
         }
 
-        .heart-ring:nth-child(2) {
-            width: 120px;
-            height: 120px;
+        .lock-ring:nth-child(1) {
+            width: 110px;
+            height: 110px;
             animation-delay: 0s;
         }
 
-        .heart-ring:nth-child(3) {
-            width: 155px;
-            height: 155px;
-            animation-delay: 0.4s;
+        .lock-ring:nth-child(2) {
+            width: 150px;
+            height: 150px;
+            animation-delay: 0.5s;
         }
 
-        .heart-ring:nth-child(4) {
+        .lock-ring:nth-child(3) {
             width: 190px;
             height: 190px;
-            animation-delay: 0.8s;
+            animation-delay: 1s;
         }
 
-        @keyframes ripple {
+        @keyframes lockRipple {
             0% {
-                transform: scale(0.7);
                 opacity: 0.6;
+                transform: scale(0.8);
             }
 
             100% {
-                transform: scale(1.2);
                 opacity: 0;
+                transform: scale(1.2);
             }
         }
 
         .lock-title {
             font-family: 'Playfair Display', serif;
-            font-size: 30px;
+            font-size: 28px;
             color: #fff;
             font-style: italic;
             text-align: center;
-            letter-spacing: 0.3px;
         }
 
         .lock-question {
             font-size: 16px;
             color: rgba(255, 200, 210, 0.75);
             text-align: center;
-            max-width: 340px;
+            max-width: 320px;
             font-weight: 300;
             line-height: 1.5;
         }
 
-        /* Input Card */
-        .input-container {
+        .lock-card {
             width: 100%;
             max-width: 380px;
             background: rgba(255, 77, 109, 0.07);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 77, 109, 0.18);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 77, 109, 0.2);
             border-radius: 24px;
-            padding: 28px 24px;
-            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            padding: 28px 24px 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
 
-        /* Regular text inputs */
         .lock-input {
             width: 100%;
-            padding: 15px 18px;
+            padding: 14px 18px;
             border-radius: 14px;
             border: 1.5px solid rgba(255, 77, 109, 0.3);
             background: rgba(255, 255, 255, 0.07);
@@ -442,8 +477,8 @@
             font-family: inherit;
             text-align: center;
             outline: none;
-            transition: all 0.25s;
-            letter-spacing: 1px;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
         }
 
         .lock-input:focus {
@@ -456,58 +491,115 @@
             color: rgba(255, 255, 255, 0.3);
         }
 
-        /* ─── Custom Date Picker ─── */
-        .date-picker-row {
+        /* Calendar date picker */
+        .cal-wrap {
+            width: 100%;
+        }
+
+        .cal-nav {
             display: flex;
-            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .cal-nav-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 77, 109, 0.2);
+            border-radius: 10px;
+            color: #fff;
+            width: 34px;
+            height: 34px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
             align-items: center;
             justify-content: center;
+            transition: background 0.2s;
         }
 
-        .date-select {
-            flex: 1;
-            padding: 15px 10px;
-            border-radius: 14px;
-            border: 1.5px solid rgba(255, 77, 109, 0.3);
-            background: rgba(255, 255, 255, 0.07);
-            color: #fff;
+        .cal-nav-btn:hover {
+            background: rgba(255, 77, 109, 0.25);
+        }
+
+        .cal-month-label {
+            font-family: 'Playfair Display', serif;
             font-size: 16px;
-            font-family: inherit;
+            color: #fff;
+            font-style: italic;
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .cal-day-header {
             text-align: center;
-            outline: none;
+            font-size: 10px;
+            font-weight: 600;
+            color: rgba(255, 200, 210, 0.5);
+            padding: 4px 0 6px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .cal-day {
+            aspect-ratio: 1;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid transparent;
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            transition: all 0.25s;
-            appearance: none;
-            -webkit-appearance: none;
+            transition: all 0.15s;
+            font-family: inherit;
         }
 
-        .date-select:focus {
-            border-color: #ff4d6d;
-            background: rgba(255, 255, 255, 0.12);
-            box-shadow: 0 0 0 4px rgba(255, 77, 109, 0.15);
-        }
-
-        .date-select option {
-            background: #2d0a18;
+        .cal-day:hover {
+            background: rgba(255, 77, 109, 0.25);
             color: #fff;
         }
 
-        .date-sep {
-            color: rgba(255, 77, 109, 0.8);
-            font-size: 22px;
-            font-weight: 300;
-            flex-shrink: 0;
+        .cal-day.selected {
+            background: #ff4d6d;
+            color: #fff;
+            border-color: #ff4d6d;
+            box-shadow: 0 4px 14px rgba(255, 77, 109, 0.45);
         }
 
-        /* Native date input for full-date type */
-        input[type="date"].lock-input {
-            color-scheme: dark;
+        .cal-day.empty {
+            background: transparent;
+            border-color: transparent;
+            cursor: default;
+        }
+
+        .cal-day.empty:hover {
+            background: transparent;
+        }
+
+        .cal-selected-label {
+            text-align: center;
+            font-size: 13px;
+            color: rgba(255, 200, 210, 0.6);
+            margin-top: 10px;
+            min-height: 18px;
+        }
+
+        .cal-selected-label span {
+            color: #ff4d6d;
+            font-weight: 600;
         }
 
         .lock-btn {
             width: 100%;
             margin-top: 16px;
-            padding: 16px;
+            padding: 15px;
             border-radius: 14px;
             border: none;
             background: linear-gradient(135deg, #ff4d6d 0%, #c9184a 100%);
@@ -515,10 +607,10 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
             font-family: inherit;
             letter-spacing: 0.3px;
             box-shadow: 0 6px 20px rgba(255, 77, 109, 0.35);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .lock-btn:hover {
@@ -527,13 +619,13 @@
         }
 
         .lock-btn:active {
-            transform: translateY(0);
+            transform: none;
         }
 
         .lock-error {
             color: #ff6b8a;
             font-size: 13px;
-            margin-top: 12px;
+            margin-top: 10px;
             text-align: center;
             opacity: 0;
             transition: opacity 0.3s;
@@ -544,404 +636,397 @@
             opacity: 1;
         }
 
-        /* ═══ LOADING ═══ */
-        .loading-screen {
+        /* Footer text */
+        #footerText {
             position: fixed;
-            inset: 0;
-            background: #fdfdfd;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 20px;
-            z-index: 10001;
-        }
-
-        .loading-screen.hidden {
-            display: none;
-        }
-
-        .spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid #f0f0f0;
-            border-top: 4px solid #ff4d6d;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .loading-text {
-            color: #888;
-            font-size: 15px;
-        }
-
-        /* ═══ FOOTER TEXT ═══ */
-        .footer-text {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: clamp(16px, 3vw, 40px);
+            bottom: clamp(16px, 4vh, 40px);
             font-family: 'Playfair Display', serif;
+            font-size: clamp(34px, 5.5vw, 64px);
             font-style: italic;
-            font-size: 15px;
-            color: rgba(100, 60, 70, 0.6);
-            z-index: 5;
+            font-weight: 400;
+            line-height: 1;
+            color: #1a1a1c;
+            z-index: 20;
             pointer-events: none;
-            white-space: nowrap;
-        }
-
-        @media (max-width: 600px) {
-            .letter-paper-card {
-                padding: 48px 24px 32px;
-            }
-
-            .lock-input,
-            .lock-btn {
-                width: 100%;
-            }
+            max-width: calc(100vw - 32px);
+            display: none;
         }
     </style>
 </head>
 
 <body>
 
-    <!-- Loading Screen -->
-    <div class="loading-screen" id="loadingScreen">
-        <div class="spinner"></div>
-        <div class="loading-text">Loading your bouquet...</div>
-    </div>
-
-    <!-- Floating Hearts Background -->
+    <!-- Floating Hearts (shown on lock screen only) -->
     <div class="hearts-bg" id="heartsBg"></div>
 
     <!-- Lock Screen -->
-    <div class="lock-screen hidden" id="lockScreen">
-        <div class="lock-icon">
-            <div class="heart-ring"></div>
-            <div class="heart-ring"></div>
-            <div class="heart-ring"></div>
-            <span class="heart-pulse">❤️</span>
+    <div class="lock-screen" id="lockScreen">
+        <div class="lock-heart-wrap">
+            <div class="lock-ring"></div>
+            <div class="lock-ring"></div>
+            <div class="lock-ring"></div>
+            <span class="lock-heart-emoji">❤️</span>
         </div>
         <div class="lock-title">Protected Bouquet</div>
-        <div class="lock-question" id="lockQuestion">Answer to unlock</div>
-        <div class="input-container">
+        <div class="lock-question" id="lockQuestion">Unlock to view</div>
+        <div class="lock-card">
             <div id="inputArea"></div>
             <div class="lock-error" id="errorMsg">Incorrect answer. Try again 💔</div>
         </div>
     </div>
 
-    <!-- Letter Viewer -->
-    <div class="letter-viewer-overlay" id="letterViewer" onclick="if(event.target===this)closeLetter()">
-        <div class="letter-paper-card" id="letterPaper">
-            <button class="letter-close-btn" onclick="closeLetter()">&#215;</button>
-            <div class="letter-body-text" id="letterBodyText"></div>
-        </div>
-    </div>
+    <!-- Letter Viewer (same as editor) -->
+    <div class="letter-viewer-overlay" id="letterViewer" onclick="if(event.target===this)closeLetterViewer()"></div>
 
-    <!-- Main Canvas - Exact same structure as editor -->
-    <div class="workspace">
-        <div class="canvas" id="mainCanvas">
+    <!-- Canvas (exact editor structure) -->
+    <div class="workspace" id="workspace">
+        <div class="canvas" id="canvas">
             <div class="fixed-backdrop" id="fixedBouquet">
-                <img src="Vector.svg" alt="">
+                <img src="./bf4c5981-fca3-4522-8d53-5e9128cd3b72 1.png" alt="Bouquet">
             </div>
             <div class="content-layer" id="contentLayer"></div>
         </div>
     </div>
 
+    <div id="footerText"></div>
+
     <script>
-        // ═══ SUPABASE SETUP ═══
+        // ═══ CONFIG ═══
         const SUPABASE_URL = 'https://yahblufnafnyqoligtlw.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaGJsdWZuYWZueXFvbGlndGx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5OTQ0NjYsImV4cCI6MjA4NjU3MDQ2Nn0.ZV0aMjzTMHWThE-0x2LIoq2WxcubL67pBVNiyQPosV0';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        const canvas = document.getElementById('canvas');
+        const contentLayer = document.getElementById('contentLayer');
+        const lockScreen = document.getElementById('lockScreen');
+
         let canvasData = null;
         let securityConfig = null;
 
-        // ═══ GET CANVAS ID FROM URL ═══
+        // Calendar state
+        let calSelectedDay = null;
+        let calSelectedMonth = null;
+        let calViewYear = new Date().getFullYear();
+        let calViewMonth = new Date().getMonth(); // 0-indexed
+
+        // ═══ GET ID FROM URL ═══
         function getCanvasId() {
             const params = new URLSearchParams(window.location.search);
             const fromQuery = (params.get('name') || params.get('id') || '').trim();
             if (fromQuery) return fromQuery;
-
-            const path = window.location.pathname || '/';
-            const normalized = path.replace(/^\/+|\/+$/g, '');
-            if (!normalized || normalized === 'viewer.html' || normalized === 'editor.html') return '';
-            return decodeURIComponent(normalized);
+            const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+            if (!path || path === 'viewer.html' || path === 'editor.html') return '';
+            return decodeURIComponent(path);
         }
 
         // ═══ MAIN LOAD ═══
         window.addEventListener('load', async () => {
-            const id = getCanvasId();
+            spawnHearts();
 
-            if (!id) {
-                window.location.replace('/');
-                return;
-            }
+            const id = getCanvasId();
+            if (!id) { window.location.replace('/'); return; }
 
             try {
-                // Check if UUID or name
                 const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-
                 let query = supabaseClient.from('canvases').select('*');
                 query = isUUID ? query.eq('id', id) : query.eq('canvas_data->>name', id);
-
                 const { data, error } = await query.maybeSingle();
 
                 if (error || !data) {
-                    showError('Bouquet not found', error?.message || 'Could not load this bouquet.');
+                    showLockError('Bouquet not found. Check the link.');
                     return;
                 }
 
                 canvasData = data.canvas_data;
-                const elements = Array.isArray(canvasData) ? canvasData : (canvasData?.elements || []);
 
-                // Set background if saved
-                if (canvasData?.backgroundColor) {
-                    document.getElementById('mainCanvas').style.background = canvasData.backgroundColor;
-                }
-
-                // Show footer text if saved
-                if (canvasData?.footerText) {
-                    const footer = document.createElement('div');
-                    footer.className = 'footer-text';
-                    footer.textContent = canvasData.footerText;
-                    document.body.appendChild(footer);
-                }
-
-                // Check security
                 if (canvasData?.security && canvasData.security.type !== 'none') {
                     securityConfig = canvasData.security;
-                    document.getElementById('loadingScreen').classList.add('hidden');
-                    showLockScreen();
+                    buildLockScreen();
                 } else {
-                    renderCanvas(elements);
-                    document.getElementById('loadingScreen').classList.add('hidden');
+                    lockScreen.classList.add('hidden');
+                    renderCanvas();
                 }
-
             } catch (err) {
-                showError('Something went wrong', err.message);
+                showLockError('Failed to load: ' + err.message);
             }
         });
 
-        // ═══ SPAWN FLOATING HEARTS ═══
+        // ═══ FLOATING HEARTS ═══
         function spawnHearts() {
             const bg = document.getElementById('heartsBg');
-            if (!bg) return;
             const emojis = ['❤️', '💕', '💗', '💖', '💘', '🩷', '💝'];
-            for (let i = 0; i < 22; i++) {
+            for (let i = 0; i < 24; i++) {
                 const h = document.createElement('span');
                 h.className = 'floating-heart';
-                h.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-                h.style.left = Math.random() * 100 + '%';
-                h.style.fontSize = (12 + Math.random() * 18) + 'px';
-                h.style.animationDuration = (7 + Math.random() * 10) + 's';
-                h.style.animationDelay = (Math.random() * 6) + 's';
+                h.textContent = emojis[i % emojis.length];
+                h.style.left = (Math.random() * 100) + '%';
+                h.style.fontSize = (11 + Math.random() * 16) + 'px';
+                h.style.animationDuration = (8 + Math.random() * 10) + 's';
+                h.style.animationDelay = (Math.random() * 8) + 's';
                 bg.appendChild(h);
             }
         }
 
-        // ═══ LOCK SCREEN ═══
-        function showLockScreen() {
-            spawnHearts();
-            const ls = document.getElementById('lockScreen');
-            ls.classList.remove('hidden');
-            document.getElementById('lockQuestion').textContent = securityConfig.question || 'Enter the answer to unlock';
-
-            const area = document.getElementById('inputArea');
+        // ═══ LOCK SCREEN BUILDER ═══
+        function buildLockScreen() {
             const type = securityConfig.type || 'text';
+            document.getElementById('lockQuestion').textContent =
+                securityConfig.question || 'Enter the answer to unlock';
+            const area = document.getElementById('inputArea');
 
             if (type === 'date_short') {
-                // Beautiful custom day/month dropdowns
-                const days = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
-                const months = ['01 – Jan', '02 – Feb', '03 – Mar', '04 – Apr', '05 – May', '06 – Jun',
-                    '07 – Jul', '08 – Aug', '09 – Sep', '10 – Oct', '11 – Nov', '12 – Dec'];
-                area.innerHTML = `
-                    <div class="date-picker-row">
-                        <select class="date-select" id="daySelect">
-                            <option value="" disabled selected>Day</option>
-                            ${days.map(d => `<option value="${d}">${d}</option>`).join('')}
-                        </select>
-                        <span class="date-sep">/</span>
-                        <select class="date-select" id="monthSelect">
-                            <option value="" disabled selected>Month</option>
-                            ${months.map((m, i) => `<option value="${String(i + 1).padStart(2, '0')}">${m}</option>`).join('')}
-                        </select>
-                    </div>
-                    <button class="lock-btn" onclick="checkAnswer()">Unlock Bouquet 💝</button>`;
+                buildCalendar(area);
             } else if (type === 'date' || type === 'date_full') {
-                area.innerHTML = `
-                    <input type="date" class="lock-input" id="ansInput">
+                area.innerHTML = `<input type="date" class="lock-input" id="ansInput">
                     <button class="lock-btn" onclick="checkAnswer()">Unlock Bouquet 💝</button>`;
             } else if (type === 'pin') {
-                area.innerHTML = `
-                    <input type="number" class="lock-input" id="ansInput" placeholder="Enter PIN">
+                area.innerHTML = `<input type="number" class="lock-input" id="ansInput" placeholder="Enter PIN">
                     <button class="lock-btn" onclick="checkAnswer()">Unlock Bouquet 💝</button>`;
             } else if (type === 'sentence') {
-                area.innerHTML = `
-                    <textarea class="lock-input" id="ansInput" placeholder="Enter the phrase..." style="height:80px;resize:none;"></textarea>
+                area.innerHTML = `<textarea class="lock-input" id="ansInput" placeholder="Enter the phrase..." style="height:80px;resize:none;"></textarea>
                     <button class="lock-btn" onclick="checkAnswer()">Unlock Bouquet 💝</button>`;
             } else {
-                area.innerHTML = `
-                    <input type="text" class="lock-input" id="ansInput" placeholder="Enter your answer">
+                area.innerHTML = `<input type="text" class="lock-input" id="ansInput" placeholder="Enter your answer">
                     <button class="lock-btn" onclick="checkAnswer()">Unlock Bouquet 💝</button>`;
-            }
-
-            // Enter key support
-            const input = document.getElementById('ansInput');
-            if (input) {
-                input.focus();
-                input.addEventListener('keypress', e => { if (e.key === 'Enter') checkAnswer(); });
+                const inp = document.getElementById('ansInput');
+                if (inp) { inp.focus(); inp.addEventListener('keypress', e => { if (e.key === 'Enter') checkAnswer(); }); }
             }
         }
 
+        // ═══ CALENDAR WIDGET ═══
+        const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const DAY_NAMES = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+        function buildCalendar(container) {
+            container.innerHTML = `<div class="cal-wrap" id="calWrap"></div>
+                <div class="cal-selected-label" id="calLabel">Select your date</div>
+                <button class="lock-btn" onclick="checkAnswer()">Unlock Bouquet 💝</button>`;
+            renderCalGrid();
+        }
+
+        function renderCalGrid() {
+            const wrap = document.getElementById('calWrap');
+            if (!wrap) return;
+
+            const year = calViewYear;
+            const month = calViewMonth;
+            const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            let html = `<div class="cal-nav">
+                <button class="cal-nav-btn" onclick="calPrev()">&#8249;</button>
+                <span class="cal-month-label">${MONTH_NAMES[month]}</span>
+                <button class="cal-nav-btn" onclick="calNext()">&#8250;</button>
+            </div>
+            <div class="cal-grid">`;
+
+            DAY_NAMES.forEach(d => { html += `<div class="cal-day-header">${d}</div>`; });
+
+            // Empty slots before first day
+            for (let i = 0; i < firstDay; i++) {
+                html += `<div class="cal-day empty"></div>`;
+            }
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const sel = calSelectedDay === d && calSelectedMonth === month ? 'selected' : '';
+                html += `<div class="cal-day ${sel}" onclick="calSelect(${d},${month})">${d}</div>`;
+            }
+
+            html += `</div>`;
+            wrap.innerHTML = html;
+
+            // Update label
+            const label = document.getElementById('calLabel');
+            if (label) {
+                if (calSelectedDay && calSelectedMonth !== null) {
+                    label.innerHTML = `Selected: <span>${String(calSelectedDay).padStart(2, '0')}/${String(calSelectedMonth + 1).padStart(2, '0')}</span>`;
+                } else {
+                    label.textContent = 'Select your date';
+                }
+            }
+        }
+
+        function calPrev() {
+            calViewMonth--;
+            if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; }
+            renderCalGrid();
+        }
+
+        function calNext() {
+            calViewMonth++;
+            if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
+            renderCalGrid();
+        }
+
+        function calSelect(day, month) {
+            calSelectedDay = day;
+            calSelectedMonth = month;
+            renderCalGrid();
+        }
+
+        // ═══ CHECK ANSWER ═══
         function checkAnswer() {
-            let val = '';
             const type = securityConfig.type || 'text';
+            let val = '';
 
             if (type === 'date_short') {
-                const day = (document.getElementById('daySelect')?.value || '').trim();
-                const month = (document.getElementById('monthSelect')?.value || '').trim();
-                if (!day || !month) {
-                    const err = document.getElementById('errorMsg');
-                    err.textContent = 'Please select both day and month 💔';
-                    err.classList.add('show');
-                    setTimeout(() => err.classList.remove('show'), 2500);
-                    return;
+                if (calSelectedDay === null) {
+                    showErr('Please select a date 💔'); return;
                 }
-                val = `${day}/${month}`;
+                val = String(calSelectedDay).padStart(2, '0') + '/' + String(calSelectedMonth + 1).padStart(2, '0');
             } else {
                 val = (document.getElementById('ansInput')?.value || '').trim().toLowerCase();
             }
 
             let correct = (securityConfig.answer || '').trim().toLowerCase();
 
-            // Normalize short dates
-            if (type === 'date_short') {
-                const norm = v => v.replace('-', '/');
-                correct = norm(correct);
-                // val is already DD/MM from dropdowns
+            // Normalize full dates
+            if (type === 'date' || type === 'date_full') {
+                // both should be YYYY-MM-DD, compare directly
             }
 
             if (val === correct) {
-                document.getElementById('lockScreen').classList.add('hidden');
-                document.getElementById('heartsBg').innerHTML = ''; // Clear hearts
-                const elements = Array.isArray(canvasData) ? canvasData : (canvasData?.elements || []);
-                renderCanvas(elements);
+                lockScreen.classList.add('hidden');
+                document.getElementById('heartsBg').style.display = 'none';
+                renderCanvas();
             } else {
-                const err = document.getElementById('errorMsg');
-                err.textContent = 'Incorrect answer. Try again 💔';
-                err.classList.add('show');
-                setTimeout(() => err.classList.remove('show'), 2500);
+                showErr('Incorrect answer. Try again 💔');
+                calSelectedDay = null; calSelectedMonth = null;
+                if (type === 'date_short') renderCalGrid();
+                else { const i = document.getElementById('ansInput'); if (i) i.value = ''; }
             }
         }
 
-        // ═══ RENDER CANVAS - Matches editor exactly ═══
-        function renderCanvas(elements) {
-            const layer = document.getElementById('contentLayer');
-            layer.innerHTML = '';
+        function showErr(msg) {
+            const e = document.getElementById('errorMsg');
+            e.textContent = msg;
+            e.classList.add('show');
+            setTimeout(() => e.classList.remove('show'), 2800);
+        }
 
-            if (!elements || !elements.length) return;
+        function showLockError(msg) {
+            document.getElementById('lockQuestion').textContent = msg;
+            document.getElementById('inputArea').innerHTML = '';
+        }
+
+        // ═══ RENDER CANVAS - matches editor's applyCanvasState exactly ═══
+        function renderCanvas() {
+            if (!canvasData) return;
+
+            const elements = Array.isArray(canvasData) ? canvasData : (canvasData.elements || []);
+
+            // Apply background
+            if (canvasData.bgColor) {
+                canvas.style.background = canvasData.bgColor;
+                document.body.style.background = canvasData.bgColor;
+            }
+
+            // Apply footer text
+            const ft = document.getElementById('footerText');
+            if (canvasData.footerText) {
+                ft.innerText = canvasData.footerText;
+                ft.style.display = 'block';
+            }
+
+            // Render elements
+            contentLayer.innerHTML = '';
 
             elements.forEach(data => {
                 try {
+                    const resolvedType = data.type;
                     const el = document.createElement('div');
 
-                    // Apply classes exactly as saved
-                    el.className = data.classes || `canvas-element el-${data.type}`;
-
-                    // Apply position and size
+                    // Exact same class/style assignment as editor's applyCanvasState
+                    el.className = data.classes || `canvas-element el-${resolvedType}`;
                     el.style.left = data.left || '0px';
                     el.style.top = data.top || '0px';
-                    el.style.width = data.width || 'auto';
-                    el.style.height = data.height || 'auto';
-                    el.style.zIndex = data.zIndex || 10;
+                    el.style.width = data.width || '';
+                    el.style.height = data.height || '';
+                    el.style.zIndex = data.zIndex || '10';
+                    el.style.transform = data.transform || '';
+                    el.style.display = 'block';
 
-                    // Apply transform (rotation etc)
-                    if (data.transform) el.style.transform = data.transform;
-
-                    // Render the element's saved HTML directly - this is the key!
-                    // The editor saves full contentHTML for every element
-                    if (data.contentHTML) {
-                        el.innerHTML = data.contentHTML;
-
-                        // For letters: make envelope clickable
-                        if (data.type === 'letter') {
-                            el.style.background = data.letterBg || 'transparent';
-                            el.style.padding = '0';
-                            el.style.borderRadius = '8px';
-                            el.style.display = 'flex';
-                            el.style.alignItems = 'center';
-                            el.style.justifyContent = 'center';
-
-                            const envView = el.querySelector('.envelope-view');
-                            if (envView) {
-                                envView.style.cursor = 'pointer';
-                                envView.onclick = () => openLetter(data);
-                            }
-                        }
-
-                        // For videos: re-enable pointer events for controls
-                        if (data.type === 'video') {
-                            const media = el.querySelector('video, iframe');
-                            if (media) media.style.pointerEvents = 'auto';
-                        }
-
-                        // For music: enable audio controls
-                        if (data.type === 'music') {
-                            const media = el.querySelector('audio, iframe');
-                            if (media) media.style.pointerEvents = 'auto';
-                        }
-                    }
-
-                    // Store data for letter opening
                     el.dataset.letterText = data.letterText || '';
                     el.dataset.letterBg = data.letterBg || '#ff69b4';
                     el.dataset.letterFontSize = data.letterFontSize || 'medium';
                     el.dataset.letterTextAlign = data.letterTextAlign || 'center';
 
-                    layer.appendChild(el);
+                    // Inject saved HTML exactly as editor does
+                    el.innerHTML = data.contentHTML || '';
+
+                    // Letter special handling - same as editor
+                    if (resolvedType === 'letter') {
+                        el.style.background = data.letterBg || '#ff69b4';
+                        el.style.color = 'black';
+                        el.style.padding = '10px';
+                        el.style.borderRadius = '8px';
+                        el.style.display = 'flex';
+                        el.style.alignItems = 'center';
+                        el.style.justifyContent = 'center';
+                        el.style.textAlign = 'center';
+                        el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+
+                        // Click to read letter (view only - no edit)
+                        el.style.cursor = 'pointer';
+                        el.onclick = () => {
+                            openLetterViewer(
+                                el.dataset.letterText,
+                                el.dataset.letterBg,
+                                el.dataset.letterFontSize,
+                                el.dataset.letterTextAlign
+                            );
+                        };
+                    }
+
+                    // Enable media interaction
+                    if (resolvedType === 'music') {
+                        const iframe = el.querySelector('iframe.el-content');
+                        if (iframe) iframe.style.pointerEvents = 'auto';
+                        const audio = el.querySelector('audio');
+                        if (audio) audio.style.pointerEvents = 'auto';
+                    }
+
+                    contentLayer.appendChild(el);
                 } catch (err) {
                     console.warn('Failed to render element:', data, err);
                 }
             });
         }
 
-        // ═══ LETTER VIEWER ═══
-        function openLetter(data) {
+        // ═══ LETTER VIEWER - exact same as editor ═══
+        function escapeHtml(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function openLetterViewer(text, bgColor, fontSize, textAlign) {
             const viewer = document.getElementById('letterViewer');
-            const textEl = document.getElementById('letterBodyText');
-            const paper = document.getElementById('letterPaper');
+            const safeBg = bgColor || '#ff69b4';
+            const safeText = escapeHtml(text || '').replace(/\n/g, '<br>');
+            const fSize = ({ 'small': '16px', 'medium': '20px', 'big': '26px' })[fontSize || 'medium'];
+            const tAlign = textAlign || 'center';
 
-            const sizeMap = { small: '16px', medium: '20px', big: '26px' };
-            textEl.textContent = data.letterText || '';
-            textEl.style.fontSize = sizeMap[data.letterFontSize] || '20px';
-            textEl.style.textAlign = data.letterTextAlign || 'center';
-
-            if (data.letterBg) paper.style.background = data.letterBg;
-
-            viewer.classList.add('open');
+            viewer.innerHTML = `
+            <div class="letter-editor-fullscreen" style="background:${safeBg};">
+                <button style="position:absolute;top:16px;left:16px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.3);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;z-index:10" onclick="closeLetterViewer()">&#215;</button>
+                <div class="letter-paper-card">
+                    <div class="texture"></div>
+                    <div class="letter-textarea" style="white-space:pre-wrap;overflow:auto;pointer-events:auto;font-size:${fSize};text-align:${tAlign}">
+                        ${safeText || '<span style="opacity:.45">No letter text</span>'}
+                    </div>
+                </div>
+            </div>`;
+            viewer.classList.add('active');
         }
 
-        function closeLetter() {
-            document.getElementById('letterViewer').classList.remove('open');
-        }
-
-        // ═══ ERROR STATE ═══
-        function showError(title, message) {
-            const loading = document.getElementById('loadingScreen');
-            loading.classList.remove('hidden');
-            loading.innerHTML = `
-                <div style="text-align:center; padding:40px;">
-                    <div style="font-size:56px; margin-bottom:20px;">💔</div>
-                    <h2 style="color:#1a1a1c; font-size:22px; margin-bottom:10px; font-family:'Playfair Display',serif;">${title}</h2>
-                    <p style="color:#888; font-size:14px; max-width:300px; margin:0 auto;">${message}</p>
-                </div>`;
+        function closeLetterViewer() {
+            const viewer = document.getElementById('letterViewer');
+            viewer.innerHTML = '';
+            viewer.classList.remove('active');
         }
     </script>
 </body>
