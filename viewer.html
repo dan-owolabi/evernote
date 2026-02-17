@@ -464,6 +464,37 @@
             border-radius: 24px;
             padding: 28px 24px 24px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 77, 109, 0.3);
+            border-top: 3px solid #ff4d6d;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 77, 109, 0.3);
+            border-top: 3px solid #ff4d6d;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .lock-input {
@@ -724,15 +755,23 @@
         window.addEventListener('load', async () => {
             spawnHearts();
 
-            // Show a loading state inside the card immediately
-            document.getElementById('inputArea').innerHTML = `
-                <div style="text-align:center;padding:20px 0;color:rgba(255,200,210,0.5);font-size:14px;">
-                    Loading...
+            // Initial loading state
+            const lockTitle = document.querySelector('.lock-title');
+            const lockQuestion = document.getElementById('lockQuestion');
+            const inputArea = document.getElementById('inputArea');
+
+            if (lockTitle) lockTitle.textContent = 'Loading Bouquet...';
+            if (lockQuestion) lockQuestion.textContent = 'Please wait a moment';
+
+            // Show spinner
+            inputArea.innerHTML = `
+                <div style="display:flex;justify-content:center;padding:20px 0;">
+                    <div class="spinner"></div>
                 </div>`;
 
             const id = getCanvasId();
             if (!id) {
-                showLockError('No bouquet link found.');
+                handleLoadError('No bouquet link found.');
                 return;
             }
 
@@ -740,26 +779,48 @@
                 const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
                 let query = supabaseClient.from('canvases').select('*');
                 query = isUUID ? query.eq('id', id) : query.eq('canvas_data->>name', id);
-                const { data, error } = await query.maybeSingle();
+
+                // Add 15s timeout
+                const fetchPromise = query.maybeSingle();
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Request timed out. Please check your connection.')), 15000)
+                );
+
+                const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
                 if (error || !data) {
-                    showLockError('Bouquet not found. Check the link.');
+                    handleLoadError(error?.message || 'Bouquet not found. Check the link.');
                     return;
                 }
 
                 canvasData = data.canvas_data;
 
+                // Handle protected vs public
                 if (canvasData?.security && canvasData.security.type !== 'none') {
                     securityConfig = canvasData.security;
+                    if (lockTitle) lockTitle.textContent = 'Protected Bouquet';
+                    if (lockQuestion) lockQuestion.textContent = securityConfig.question || 'Unlock to view';
                     buildLockScreen();
                 } else {
-                    lockScreen.classList.add('hidden');
+                    const ls = document.getElementById('lockScreen');
+                    if (ls) {
+                        ls.style.opacity = '0';
+                        setTimeout(() => ls.classList.add('hidden'), 500);
+                    }
                     renderCanvas();
                 }
+
             } catch (err) {
-                showLockError('Failed to load: ' + err.message);
+                console.error(err);
+                handleLoadError('Failed to load: ' + err.message);
             }
         });
+
+        function handleLoadError(msg) {
+            const title = document.querySelector('.lock-title');
+            if (title) title.textContent = 'Error'; // Update title to indicate failure
+            showLockError(msg);
+        }
 
         // ═══ FLOATING HEARTS ═══
         function spawnHearts() {
