@@ -967,31 +967,31 @@
                     // Inject saved HTML exactly as editor does
                     el.innerHTML = data.contentHTML || '';
 
-                    // Letter special handling - same as editor
+                    // LETTER: no pink wrapper - envelope.png is the visual
                     if (resolvedType === 'letter') {
-                        el.style.background = data.letterBg || '#ff69b4';
-                        el.style.color = 'black';
-                        el.style.padding = '10px';
-                        el.style.borderRadius = '8px';
+                        el.style.background = 'transparent';
+                        el.style.padding = '0';
+                        el.style.borderRadius = '0';
+                        el.style.boxShadow = 'none';
                         el.style.display = 'flex';
                         el.style.alignItems = 'center';
                         el.style.justifyContent = 'center';
-                        el.style.textAlign = 'center';
-                        el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
-
-                        // Click to read letter (view only - no edit)
                         el.style.cursor = 'pointer';
-                        el.onclick = () => {
-                            openLetterViewer(
-                                el.dataset.letterText,
-                                el.dataset.letterBg,
-                                el.dataset.letterFontSize,
-                                el.dataset.letterTextAlign
-                            );
-                        };
+                        el.onclick = () => openLetterViewer(
+                            el.dataset.letterText,
+                            el.dataset.letterBg,
+                            el.dataset.letterFontSize,
+                            el.dataset.letterTextAlign
+                        );
                     }
 
-                    // Enable media interaction
+                    // IMAGES & VIDEOS: open fullscreen viewer on click
+                    if (resolvedType === 'image' || resolvedType === 'video') {
+                        el.style.cursor = 'pointer';
+                        el.onclick = () => openMediaViewer(el, resolvedType);
+                    }
+
+                    // MUSIC: enable iframe/audio interaction
                     if (resolvedType === 'music') {
                         const iframe = el.querySelector('iframe.el-content');
                         if (iframe) iframe.style.pointerEvents = 'auto';
@@ -1023,14 +1023,93 @@
             const tAlign = textAlign || 'center';
 
             viewer.innerHTML = `
-            <div class="letter-editor-fullscreen" style="background:${safeBg};">
-                <button style="position:absolute;top:16px;left:16px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.3);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;z-index:10" onclick="closeLetterViewer()">&#215;</button>
-                <div class="letter-paper-card">
-                    <div class="texture"></div>
-                    <div class="letter-textarea" style="white-space:pre-wrap;overflow:auto;pointer-events:auto;font-size:${fSize};text-align:${tAlign}">
-                        ${safeText || '<span style="opacity:.45">No letter text</span>'}
-                    </div>
+            <div style="
+                width: 45vw;
+                min-width: 320px;
+                max-width: 540px;
+                max-height: 92vh;
+                border-radius: 24px;
+                padding: 48px 32px 32px;
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                box-shadow: 0 30px 100px rgba(0,0,0,0.3);
+                background: ${safeBg};
+                animation: letterSlideUp 0.5s cubic-bezier(0.4,0,0.2,1);
+                cursor: default;
+                overflow: hidden;
+            ">
+                <button onclick="closeLetterViewer()" style="
+                    position:absolute; top:16px; left:16px;
+                    width:36px; height:36px; border-radius:50%;
+                    background:rgba(255,255,255,0.3); border:none;
+                    cursor:pointer; display:flex; align-items:center;
+                    justify-content:center; font-size:18px; color:#fff; z-index:10;
+                ">&#215;</button>
+
+                <div style="
+                    width: 100%;
+                    flex: 1;
+                    background: #fff0f5;
+                    background-image: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.4) 0%, transparent 100%);
+                    border-radius: 20px;
+                    padding: 40px 32px;
+                    position: relative;
+                    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+                    border: 1px solid rgba(255,182,193,0.3);
+                    overflow-y: auto;
+                    max-height: calc(92vh - 100px);
+                ">
+                    <div style="
+                        position: absolute; inset: 0; opacity: 0.05;
+                        pointer-events: none; border-radius: 20px;
+                        background-image: url('https://www.transparenttextures.com/patterns/natural-paper.png');
+                    "></div>
+                    <div style="
+                        font-family: 'Kalam', cursive;
+                        font-size: ${fSize};
+                        line-height: 1.7;
+                        color: #4b2c34;
+                        text-align: ${tAlign};
+                        white-space: pre-wrap;
+                        word-wrap: break-word;
+                        position: relative;
+                        z-index: 2;
+                    ">${safeText || '<span style="opacity:.45">No letter text</span>'}</div>
                 </div>
+            </div>`;
+            viewer.classList.add('active');
+        }
+
+        function openMediaViewer(el, type) {
+            const viewer = document.getElementById('letterViewer');
+            const mediaNode = el.querySelector('.el-content, img, video, iframe');
+            if (!mediaNode) return;
+
+            let mediaHtml = '';
+            if (mediaNode.tagName === 'IMG') {
+                mediaHtml = `<img src="${mediaNode.src}" style="max-width:90vw;max-height:85vh;border-radius:12px;display:block;">`;
+            } else if (mediaNode.tagName === 'VIDEO') {
+                mediaHtml = `<video src="${mediaNode.currentSrc || mediaNode.src}" controls autoplay style="max-width:90vw;max-height:85vh;border-radius:12px;display:block;"></video>`;
+            } else if (mediaNode.tagName === 'IFRAME') {
+                mediaHtml = `<iframe src="${mediaNode.src}" allow="${mediaNode.allow || 'autoplay; encrypted-media'}" allowfullscreen style="width:min(90vw,800px);height:min(85vh,500px);border-radius:12px;border:none;"></iframe>`;
+            }
+
+            if (!mediaHtml) return;
+
+            viewer.innerHTML = `
+            <div style="position:relative;cursor:default;" onclick="event.stopPropagation()">
+                <button onclick="closeLetterViewer()" style="
+                    position:absolute; top:-16px; right:-16px;
+                    width:36px; height:36px; border-radius:50%;
+                    background:rgba(255,255,255,0.9); border:none;
+                    cursor:pointer; font-size:18px; color:#333;
+                    display:flex; align-items:center; justify-content:center;
+                    box-shadow:0 2px 8px rgba(0,0,0,0.2); z-index:10;
+                ">&#215;</button>
+                ${mediaHtml}
             </div>`;
             viewer.classList.add('active');
         }
