@@ -724,8 +724,17 @@
         window.addEventListener('load', async () => {
             spawnHearts();
 
+            // Show a loading state inside the card immediately
+            document.getElementById('inputArea').innerHTML = `
+                <div style="text-align:center;padding:20px 0;color:rgba(255,200,210,0.5);font-size:14px;">
+                    Loading...
+                </div>`;
+
             const id = getCanvasId();
-            if (!id) { window.location.replace('/'); return; }
+            if (!id) {
+                showLockError('No bouquet link found.');
+                return;
+            }
 
             try {
                 const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -907,7 +916,10 @@
 
         function showLockError(msg) {
             document.getElementById('lockQuestion').textContent = msg;
-            document.getElementById('inputArea').innerHTML = '';
+            document.getElementById('inputArea').innerHTML = `
+                <div style="text-align:center;padding:16px 0;color:rgba(255,150,150,0.7);font-size:13px;">
+                    ${msg}
+                </div>`;
         }
 
         // ═══ RENDER CANVAS - matches editor's applyCanvasState exactly ═══
