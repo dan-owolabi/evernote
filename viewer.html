@@ -740,76 +740,70 @@
         window.addEventListener('load', async () => {
             spawnHearts();
 
-            // Initial loading state
-            const lockTitle = document.querySelector('.lock-title');
-            const lockQuestion = document.getElementById('lockQuestion');
-            const inputArea = document.getElementById('inputArea');
+            // Set loading state
+            const title = document.querySelector('.lock-title');
+            const qEl = document.getElementById('lockQuestion');
+            const area = document.getElementById('inputArea');
 
-            if (lockTitle) lockTitle.textContent = 'Loading Bouquet...';
-            if (lockQuestion) lockQuestion.textContent = 'Please wait a moment';
-
-            // Show spinner
-            inputArea.innerHTML = `
+            if (title) title.textContent = 'Loading...';
+            if (qEl) qEl.textContent = 'Fetching your bouquet';
+            area.innerHTML = `
                 <div style="display:flex;flex-direction:column;align-items:center;padding:20px 0;">
                     <div class="spinner"></div>
-                    <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:10px;" id="loadingDebug">Connecting...</div>
+                    <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:12px;" id="loadingDebug">Connecting...</div>
                 </div>`;
 
             const id = getCanvasId();
             if (!id) {
-                handleLoadError('No ID found in URL.');
-                return;
+                return showLockError('No bouquet ID found. Please check your link.');
             }
 
             document.getElementById('loadingDebug').textContent = `Looking for: ${id}`;
 
             try {
+                // Determine if UUID or Name
                 const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-                let query = supabaseClient.from('canvases').select('*');
-                query = isUUID ? query.eq('id', id) : query.eq('canvas_data->>name', id);
 
-                // Add 15s timeout
-                const fetchPromise = query.maybeSingle();
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Timeout (15s)')), 15000)
-                );
+                let query = supabaseClient.from('canvases').select('*'); // Select all cols including security
+                if (isUUID) {
+                    query = query.eq('id', id);
+                } else {
+                    query = query.eq('canvas_data->>name', id);
+                }
 
-                const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+                // 15-second timeout race
+                const { data, error } = await Promise.race([
+                    query.maybeSingle(),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out (15s)')), 15000))
+                ]);
 
                 if (error) throw error;
                 if (!data) {
-                    handleLoadError(`Bouquet not found (${id}). Check the link.`);
-                    return;
+                    return showLockError(`Bouquet not found (${id}).`);
                 }
 
                 canvasData = data.canvas_data;
 
-                // Handle protected vs public
+                // Handle Security
                 if (canvasData?.security && canvasData.security.type !== 'none') {
                     securityConfig = canvasData.security;
-                    if (lockTitle) lockTitle.textContent = 'Protected Bouquet';
-                    if (lockQuestion) lockQuestion.textContent = securityConfig.question || 'Unlock to view';
+                    if (title) title.textContent = 'Protected Bouquet';
+                    if (qEl) qEl.textContent = securityConfig.question || 'Unlock to view';
                     buildLockScreen();
                 } else {
-                    const ls = document.getElementById('lockScreen');
-                    if (ls) {
-                        ls.style.opacity = '0';
-                        setTimeout(() => ls.classList.add('hidden'), 500);
-                    }
+                    // Success -> Hide lock screen
+                    lockScreen.style.opacity = '0';
+                    setTimeout(() => lockScreen.classList.add('hidden'), 500);
                     renderCanvas();
                 }
 
             } catch (err) {
-                console.error(err);
-                handleLoadError(`Error: ${err.message || err.error_description || 'Unknown error'}`);
+                console.error('Load Error:', err);
+                const title = document.querySelector('.lock-title');
+                if (title) title.textContent = 'Error';
+                showLockError(err.message || 'Failed to load bouquet.');
             }
         });
-
-        function handleLoadError(msg) {
-            const title = document.querySelector('.lock-title');
-            if (title) title.textContent = 'Error'; // Update title to indicate failure
-            showLockError(msg);
-        }
 
         // ═══ FLOATING HEARTS ═══
         function spawnHearts() {
@@ -830,8 +824,6 @@
         // ═══ LOCK SCREEN BUILDER ═══
         function buildLockScreen() {
             const type = securityConfig.type || 'text';
-            document.getElementById('lockQuestion').textContent =
-                securityConfig.question || 'Enter the answer to unlock';
             const area = document.getElementById('inputArea');
 
             if (type === 'date_short') {
@@ -940,11 +932,6 @@
 
             let correct = (securityConfig.answer || '').trim().toLowerCase();
 
-            // Normalize full dates
-            if (type === 'date' || type === 'date_full') {
-                // both should be YYYY-MM-DD, compare directly
-            }
-
             if (val === correct) {
                 lockScreen.classList.add('hidden');
                 document.getElementById('heartsBg').style.display = 'none';
@@ -965,11 +952,13 @@
         }
 
         function showLockError(msg) {
-            document.getElementById('lockQuestion').textContent = msg;
+            // Keep the spinner hidden maybe? Or just replace area content
             document.getElementById('inputArea').innerHTML = `
-                <div style="text-align:center;padding:16px 0;color:rgba(255,150,150,0.7);font-size:13px;">
+                <div style="text-align:center;padding:16px 0;color:rgba(255,150,150,0.9);font-size:14px;font-weight:500;">
                     ${msg}
                 </div>`;
+            const q = document.getElementById('lockQuestion');
+            if (q) q.textContent = 'Error';
         }
 
         // ═══ RENDER CANVAS - matches editor's applyCanvasState exactly ═══
