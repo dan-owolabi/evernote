@@ -5,9 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>💐 View Bouquet</title>
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Kalam:wght@300;400;700&family=Caveat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap"
         rel="stylesheet">
@@ -28,12 +25,13 @@
             width: 100vw;
             height: 100vh;
             overflow: hidden;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-workspace);
             display: flex;
             flex-direction: column;
         }
 
+        /* ═══ WORKSPACE - Exact copy from editor ═══ */
         .workspace {
             flex: 1;
             overflow: hidden;
@@ -46,7 +44,6 @@
             width: 100%;
             height: 100%;
             background: #fdfdfd;
-            box-shadow: 0 0 100px rgba(0, 0, 0, 0.02);
             overflow: hidden;
         }
 
@@ -80,7 +77,7 @@
             filter: drop-shadow(0 20px 60px rgba(0, 0, 0, 0.12));
         }
 
-        /* Canvas Elements - VIEW ONLY */
+        /* ═══ CANVAS ELEMENTS - Exact copy from editor ═══ */
         .canvas-element {
             position: absolute;
             cursor: default;
@@ -88,166 +85,103 @@
             -webkit-user-select: none;
         }
 
-        .el-content {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            display: block;
-            pointer-events: none;
-        }
-
-        /* Image frames */
         .el-image {
-            background: #fff;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
             border-radius: 4px;
             overflow: hidden;
         }
 
-        .el-image.frame-polaroid {
-            padding: 12px 12px 40px 12px;
-            background: #fff;
-        }
-
-        .el-image.frame-classic {
-            border: 16px solid #8b4513;
-            box-shadow: inset 0 0 0 2px #d4a574, 0 8px 24px rgba(0, 0, 0, 0.15);
-        }
-
-        .el-image.frame-modern {
-            border: 2px solid #1a1a1c;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Video */
-        .el-video {
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-        }
-
+        .el-image img.el-content,
         .el-video video,
         .el-video iframe {
             width: 100%;
             height: 100%;
             display: block;
+            object-fit: contain;
+            pointer-events: auto;
         }
 
-        /* Music */
         .el-music {
             border-radius: 16px;
             overflow: hidden;
-            background: linear-gradient(135deg, #ff4d6d 0%, #c9184a 100%);
-            box-shadow: 0 8px 24px rgba(255, 77, 109, 0.3);
         }
 
-        .el-music iframe {
+        .el-music iframe.el-content {
+            pointer-events: auto;
             width: 100%;
             height: 100%;
             border: none;
         }
 
-        /* Letter envelope */
-        .envelope-view {
+        .el-music audio {
             width: 100%;
-            height: 100%;
-            background: url('envelope.png') center/cover;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
         }
 
-        .envelope-view:hover {
-            transform: scale(1.02);
-            transition: transform 0.2s;
-        }
-
-        /* Stickers */
         .el-sticker {
             font-size: 64px;
             display: flex;
             align-items: center;
             justify-content: center;
-            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
         }
 
-        /* Password Modal */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
+        /* ═══ IMAGE FRAMES - Exact copy from editor ═══ */
+        .frame-polaroid {
+            background: #fff !important;
+            padding: 12px 12px 48px 12px !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
         }
 
-        .modal-content {
-            background: #fff;
-            padding: 40px;
-            border-radius: 24px;
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        .frame-polaroid img {
+            object-fit: cover !important;
+            border-radius: 2px !important;
         }
 
-        .modal-content h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 28px;
-            color: #1a1a1c;
-            margin-bottom: 12px;
+        .frame-classic {
+            background: #fff !important;
+            border: 4px solid #c9a96e !important;
+            box-shadow: inset 0 0 0 6px #8b6914, 0 8px 24px rgba(0, 0, 0, 0.18) !important;
+            padding: 8px !important;
         }
 
-        .modal-content p {
-            color: #666;
-            margin-bottom: 24px;
-            font-size: 15px;
+        .frame-classic img {
+            object-fit: cover !important;
         }
 
-        .modal-input {
+        .frame-modern {
+            background: #fff !important;
+            border: 2px solid #1a1a1c !important;
+            padding: 0 !important;
+        }
+
+        .frame-modern img {
+            object-fit: cover !important;
+        }
+
+        .frame-shadow {
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25) !important;
+        }
+
+        .frame-rounded {
+            border-radius: 16px !important;
+            overflow: hidden !important;
+        }
+
+        /* ═══ LETTER ENVELOPE ═══ */
+        .envelope-view {
             width: 100%;
-            padding: 14px 18px;
-            border: 2px solid #e5e5e7;
-            border-radius: 12px;
-            font-size: 16px;
-            font-family: inherit;
-            margin-bottom: 20px;
-            transition: border-color 0.2s;
-        }
-
-        .modal-input:focus {
-            outline: none;
-            border-color: #ff4d6d;
-        }
-
-        .modal-button {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #ff4d6d 0%, #c9184a 100%);
-            color: #fff;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
+            height: 100%;
+            background: url('envelope.png') center/cover no-repeat;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s;
         }
 
-        .modal-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(255, 77, 109, 0.4);
+        .envelope-view:hover {
+            transform: scale(1.02);
         }
 
-        .error-text {
-            color: #ff4d6d;
-            font-size: 14px;
-            margin-top: 12px;
-        }
-
-        /* Letter Viewer */
-        .letter-viewer {
+        /* ═══ LETTER VIEWER OVERLAY ═══ */
+        .letter-viewer-overlay {
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.85);
@@ -259,15 +193,15 @@
             padding: 20px;
         }
 
-        .letter-viewer.active {
+        .letter-viewer-overlay.open {
             display: flex;
         }
 
-        .letter-paper {
+        .letter-paper-card {
             background: linear-gradient(135deg, #ffe0e9 0%, #fff5f7 100%);
-            padding: 60px 40px;
+            padding: 60px 40px 40px;
             border-radius: 16px;
-            max-width: 600px;
+            max-width: 560px;
             width: 100%;
             max-height: 80vh;
             overflow-y: auto;
@@ -275,40 +209,141 @@
             position: relative;
         }
 
-        .letter-close {
+        .letter-close-btn {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 40px;
-            height: 40px;
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.8);
             border: none;
-            font-size: 24px;
+            font-size: 20px;
             cursor: pointer;
+            color: #555;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #666;
+            line-height: 1;
             transition: all 0.2s;
         }
 
-        .letter-close:hover {
+        .letter-close-btn:hover {
             background: #fff;
             color: #ff4d6d;
             transform: scale(1.1);
         }
 
-        .letter-text {
+        .letter-body-text {
             font-family: 'Kalam', cursive;
             color: #4b2c34;
             white-space: pre-wrap;
             word-wrap: break-word;
             line-height: 1.8;
+            font-size: 20px;
+            text-align: center;
         }
 
-        /* Loading */
-        .loading {
+        /* ═══ LOCK SCREEN ═══ */
+        .lock-screen {
+            position: fixed;
+            inset: 0;
+            background: #1a0a10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            flex-direction: column;
+            gap: 24px;
+            padding: 20px;
+        }
+
+        .lock-screen.hidden {
+            display: none;
+        }
+
+        .lock-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff4d6d, #c9184a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            box-shadow: 0 0 40px rgba(255, 77, 109, 0.4);
+        }
+
+        .lock-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            color: #fff;
+            font-style: italic;
+            text-align: center;
+        }
+
+        .lock-question {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            max-width: 360px;
+        }
+
+        .lock-input {
+            width: 320px;
+            max-width: 100%;
+            padding: 16px 20px;
+            border-radius: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-size: 16px;
+            font-family: inherit;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .lock-input:focus {
+            border-color: #ff4d6d;
+        }
+
+        .lock-input::placeholder {
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+        .lock-btn {
+            width: 320px;
+            max-width: 100%;
+            padding: 16px;
+            border-radius: 14px;
+            border: none;
+            background: linear-gradient(135deg, #ff4d6d, #c9184a);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+        }
+
+        .lock-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 77, 109, 0.4);
+        }
+
+        .lock-error {
+            color: #ff6b8a;
+            font-size: 14px;
+            display: none;
+        }
+
+        .lock-error.show {
+            display: block;
+        }
+
+        /* ═══ LOADING ═══ */
+        .loading-screen {
             position: fixed;
             inset: 0;
             background: #fdfdfd;
@@ -316,457 +351,340 @@
             align-items: center;
             justify-content: center;
             flex-direction: column;
+            gap: 20px;
             z-index: 10001;
         }
 
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #f3f3f3;
+        .loading-screen.hidden {
+            display: none;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #f0f0f0;
             border-top: 4px solid #ff4d6d;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
+            to {
                 transform: rotate(360deg);
             }
         }
 
         .loading-text {
-            margin-top: 20px;
-            color: #666;
-            font-size: 16px;
+            color: #888;
+            font-size: 15px;
         }
 
-        /* Hide on load */
-        .hidden {
-            display: none !important;
+        /* ═══ FOOTER TEXT ═══ */
+        .footer-text {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: 15px;
+            color: rgba(100, 60, 70, 0.6);
+            z-index: 5;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 600px) {
+            .letter-paper-card {
+                padding: 48px 24px 32px;
+            }
+
+            .lock-input,
+            .lock-btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
 
 <body>
+
     <!-- Loading Screen -->
-    <div class="loading" id="loading">
-        <div class="loading-spinner"></div>
+    <div class="loading-screen" id="loadingScreen">
+        <div class="spinner"></div>
         <div class="loading-text">Loading your bouquet...</div>
     </div>
 
-    <!-- Password Modal -->
-    <div class="modal-overlay hidden" id="passwordModal">
-        <div class="modal-content">
-            <h2>🔒 Protected Bouquet</h2>
-            <p id="securityQuestion">Enter the password to view</p>
-            <input type="text" class="modal-input" id="passwordInput" placeholder="Enter password">
-            <button class="modal-button" onclick="checkPassword()">Unlock</button>
-            <div class="error-text hidden" id="errorText">Incorrect password. Try again.</div>
+    <!-- Lock Screen -->
+    <div class="lock-screen hidden" id="lockScreen">
+        <div class="lock-icon">🔒</div>
+        <div class="lock-title">Protected Bouquet</div>
+        <div class="lock-question" id="lockQuestion">Answer to unlock</div>
+        <div id="inputArea">
+            <input type="text" class="lock-input" id="ansInput" placeholder="Enter your answer">
+            <br><br>
+            <button class="lock-btn" onclick="checkAnswer()">Unlock Bouquet 💝</button>
         </div>
+        <div class="lock-error" id="errorMsg">Incorrect answer. Try again 💔</div>
     </div>
 
     <!-- Letter Viewer -->
-    <div class="letter-viewer" id="letterViewer">
-        <button class="letter-close" onclick="closeLetterViewer()">×</button>
-        <div class="letter-paper">
-            <div class="letter-text" id="letterText"></div>
+    <div class="letter-viewer-overlay" id="letterViewer" onclick="if(event.target===this)closeLetter()">
+        <div class="letter-paper-card" id="letterPaper">
+            <button class="letter-close-btn" onclick="closeLetter()">&#215;</button>
+            <div class="letter-body-text" id="letterBodyText"></div>
         </div>
     </div>
 
-    <!-- Main Workspace -->
+    <!-- Main Canvas - Exact same structure as editor -->
     <div class="workspace">
-        <div class="canvas" id="canvas">
+        <div class="canvas" id="mainCanvas">
             <div class="fixed-backdrop" id="fixedBouquet">
-                <img src="Vector.svg" alt="Bouquet">
+                <img src="Vector.svg" alt="">
             </div>
             <div class="content-layer" id="contentLayer"></div>
         </div>
     </div>
 
     <script>
-        // Supabase Setup - safe initialization
+        // ═══ SUPABASE SETUP ═══
         const SUPABASE_URL = 'https://yahblufnafnyqoligtlw.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaGJsdWZuYWZueXFvbGlndGx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5OTQ0NjYsImV4cCI6MjA4NjU3MDQ2Nn0.ZV0aMjzTMHWThE-0x2LIoq2WxcubL67pBVNiyQPosV0';
-
-        // Initialize Supabase client safely
-        let supabase;
-        try {
-            if (window.supabase && window.supabase.createClient) {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            } else {
-                throw new Error('Supabase library not loaded');
-            }
-        } catch (err) {
-            console.error('Supabase initialization error:', err);
-            showError('Failed to initialize viewer. Please refresh the page.');
-        }
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let canvasData = null;
         let securityConfig = null;
-        let resolvedRowId = null;
-        let requestedCanvasId = null;
 
-        function withTimeout(promise, ms, message) {
-            return Promise.race([
-                promise,
-                new Promise((_, reject) => setTimeout(() => reject(new Error(message || 'Request timeout')), ms))
-            ]);
-        }
-
-        // Get canvas ID from URL
+        // ═══ GET CANVAS ID FROM URL ═══
         function getCanvasId() {
             const params = new URLSearchParams(window.location.search);
-            const fromQuery = (params.get('id') || params.get('name') || '').trim();
+            const fromQuery = (params.get('name') || params.get('id') || '').trim();
             if (fromQuery) return fromQuery;
 
-            const pathname = window.location.pathname || '/';
-            const normalized = pathname.replace(/^\/+|\/+$/g, '');
-            if (!normalized) return null;
-
-            const pathParts = normalized.split('/');
-            const lastPart = decodeURIComponent(pathParts[pathParts.length - 1] || '').trim();
-
-            // Filter out system routes/files
-            if (!lastPart || lastPart === 'viewer.html' || lastPart === 'index.html' || lastPart === 'editor' || lastPart === 'viewer') {
-                return null;
-            }
-
-            return lastPart;
+            const path = window.location.pathname || '/';
+            const normalized = path.replace(/^\/+|\/+$/g, '');
+            if (!normalized || normalized === 'viewer.html' || normalized === 'editor.html') return '';
+            return decodeURIComponent(normalized);
         }
 
-        // Load canvas from Supabase
-        function buildLookupQuery(selectClause, canvasId) {
-            let query = supabase.from('canvases').select(selectClause);
-            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(canvasId);
+        // ═══ MAIN LOAD ═══
+        window.addEventListener('load', async () => {
+            const id = getCanvasId();
 
-            if (isUUID) {
-                query = query.eq('id', canvasId);
-            } else {
-                query = query.eq('canvas_data->>name', canvasId).order('updated_at', { ascending: false }).limit(1);
-            }
-            return query;
-        }
-
-        async function fetchCanvasMeta(canvasId) {
-            const metaQuery = buildLookupQuery('id, updated_at, security:canvas_data->security', canvasId);
-            const { data, error } = await withTimeout(metaQuery.maybeSingle(), 12000, 'Metadata fetch timed out');
-            if (error) throw error;
-            if (!data) throw new Error('Bouquet not found');
-
-            resolvedRowId = data.id || null;
-            securityConfig = data.security || null;
-        }
-
-        async function fetchFullCanvasData() {
-            if (!requestedCanvasId) throw new Error('No bouquet ID found. Please check your link.');
-
-            let fullQuery;
-            if (resolvedRowId) {
-                fullQuery = supabase.from('canvases').select('*').eq('id', resolvedRowId).limit(1);
-            } else {
-                fullQuery = buildLookupQuery('*', requestedCanvasId);
-            }
-
-            const { data, error } = await withTimeout(fullQuery.maybeSingle(), 30000, 'Bouquet fetch timed out');
-            if (error) throw error;
-            if (!data) throw new Error('Bouquet not found');
-
-            canvasData = data.canvas_data || data;
-            if (Array.isArray(canvasData)) {
-                canvasData = { elements: canvasData };
-            }
-        }
-
-        async function loadCanvas() {
-            // Safety check
-            if (!supabase) {
-                showError('Viewer initialization failed. Please refresh the page.');
-                return;
-            }
-
-            requestedCanvasId = getCanvasId();
-            if (!requestedCanvasId) {
-                showError('No bouquet ID found. Please check your link.');
+            if (!id) {
+                window.location.replace('/');
                 return;
             }
 
             try {
-                // Lightweight preflight so password prompt is not blocked by huge media payloads
-                await fetchCanvasMeta(requestedCanvasId);
+                // Check if UUID or name
+                const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-                const hasSecurityType = !!(securityConfig && securityConfig.type && securityConfig.type !== 'none');
-                const isEnabled = !!(securityConfig && securityConfig.enabled);
-                const hasAnswer = !!(securityConfig && String(securityConfig.answer || '').trim());
-                const requiresPassword = isEnabled || hasSecurityType || hasAnswer;
+                let query = supabaseClient.from('canvases').select('*');
+                query = isUUID ? query.eq('id', id) : query.eq('canvas_data->>name', id);
 
-                if (requiresPassword) {
-                    document.getElementById('loading').classList.add('hidden');
-                    showPasswordModal();
+                const { data, error } = await query.maybeSingle();
+
+                if (error || !data) {
+                    showError('Bouquet not found', error?.message || 'Could not load this bouquet.');
                     return;
                 }
 
-                await fetchFullCanvasData();
-                document.getElementById('loading').classList.add('hidden');
-                requestAnimationFrame(() => {
-                    try {
-                        renderCanvas();
-                    } catch (renderErr) {
-                        console.error('Render error:', renderErr);
-                        showError('Failed to render bouquet: ' + (renderErr.message || 'Unknown error'));
-                    }
-                });
+                canvasData = data.canvas_data;
+                const elements = Array.isArray(canvasData) ? canvasData : (canvasData?.elements || []);
+
+                // Set background if saved
+                if (canvasData?.backgroundColor) {
+                    document.getElementById('mainCanvas').style.background = canvasData.backgroundColor;
+                }
+
+                // Show footer text if saved
+                if (canvasData?.footerText) {
+                    const footer = document.createElement('div');
+                    footer.className = 'footer-text';
+                    footer.textContent = canvasData.footerText;
+                    document.body.appendChild(footer);
+                }
+
+                // Check security
+                if (canvasData?.security && canvasData.security.type !== 'none') {
+                    securityConfig = canvasData.security;
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                    showLockScreen();
+                } else {
+                    renderCanvas(elements);
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                }
+
             } catch (err) {
-                console.error('Load error:', err);
-                showError('Failed to load bouquet: ' + (err.message || 'Unknown error'));
+                showError('Something went wrong', err.message);
+            }
+        });
+
+        // ═══ LOCK SCREEN ═══
+        function showLockScreen() {
+            const ls = document.getElementById('lockScreen');
+            ls.classList.remove('hidden');
+            document.getElementById('lockQuestion').textContent = securityConfig.question || 'Enter the answer to unlock';
+
+            const area = document.getElementById('inputArea');
+            const type = securityConfig.type || 'text';
+            let inputHTML = '';
+
+            if (type === 'date_short') {
+                inputHTML = '<input type="text" class="lock-input" id="ansInput" placeholder="DD/MM">';
+            } else if (type === 'date' || type === 'date_full') {
+                inputHTML = '<input type="date" class="lock-input" id="ansInput">';
+            } else if (type === 'pin') {
+                inputHTML = '<input type="number" class="lock-input" id="ansInput" placeholder="Enter PIN">';
+            } else if (type === 'sentence') {
+                inputHTML = '<textarea class="lock-input" id="ansInput" placeholder="Enter the phrase..." style="height:80px;resize:none;"></textarea>';
+            } else {
+                inputHTML = '<input type="text" class="lock-input" id="ansInput" placeholder="Enter your answer">';
+            }
+
+            area.innerHTML = inputHTML + '<br><br><button class="lock-btn" onclick="checkAnswer()">Unlock Bouquet 💝</button>';
+
+            const input = document.getElementById('ansInput');
+            if (input) {
+                input.focus();
+                input.addEventListener('keypress', e => { if (e.key === 'Enter') checkAnswer(); });
             }
         }
 
-        // Show password modal
-        function showPasswordModal() {
-            const modal = document.getElementById('passwordModal');
-            const question = document.getElementById('securityQuestion');
+        function checkAnswer() {
+            const input = document.getElementById('ansInput');
+            let val = (input.value || '').trim().toLowerCase();
+            let correct = (securityConfig.answer || '').trim().toLowerCase();
 
-            if (securityConfig.question) {
-                question.textContent = securityConfig.question;
-            }
-
-            modal.classList.remove('hidden');
-            document.getElementById('passwordInput').focus();
-        }
-
-        // Check password
-        async function checkPassword() {
-            let input = document.getElementById('passwordInput').value.trim().toLowerCase();
-            let answer = ((securityConfig && securityConfig.answer) || '').trim().toLowerCase();
-
-            if (((securityConfig && securityConfig.type) || '') === 'date_short') {
-                const normalizeShortDate = (raw) => {
-                    const value = String(raw || '').trim();
-                    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-                        const [, mm, dd] = value.split('-');
+            // Normalize short dates
+            if (securityConfig.type === 'date_short') {
+                const norm = v => {
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+                        const [, mm, dd] = v.split('-');
                         return `${dd}/${mm}`;
                     }
-                    if (/^\d{2}\/\d{2}$/.test(value)) return value;
-                    if (/^\d{2}-\d{2}$/.test(value)) {
-                        const [a, b] = value.split('-');
-                        return `${b}/${a}`;
-                    }
-                    return value;
+                    return v.replace('-', '/');
                 };
-                input = normalizeShortDate(input).toLowerCase();
-                answer = normalizeShortDate(answer).toLowerCase();
+                val = norm(val);
+                correct = norm(correct);
             }
 
-            if (input === answer) {
-                document.getElementById('passwordModal').classList.add('hidden');
-                const loading = document.getElementById('loading');
-                if (loading) {
-                    loading.classList.remove('hidden');
-                    const textEl = loading.querySelector('.loading-text');
-                    if (textEl) textEl.textContent = 'Opening your bouquet...';
-                }
-
-                try {
-                    await fetchFullCanvasData();
-                    if (loading) loading.classList.add('hidden');
-                    requestAnimationFrame(() => {
-                        try {
-                            renderCanvas();
-                        } catch (renderErr) {
-                            console.error('Render error after unlock:', renderErr);
-                            showError('Failed to render bouquet: ' + (renderErr.message || 'Unknown error'));
-                        }
-                    });
-                } catch (err) {
-                    console.error('Post-unlock load error:', err);
-                    showError('Failed to load bouquet after unlock: ' + (err.message || 'Unknown error'));
-                }
+            if (val === correct) {
+                document.getElementById('lockScreen').classList.add('hidden');
+                const elements = Array.isArray(canvasData) ? canvasData : (canvasData?.elements || []);
+                renderCanvas(elements);
             } else {
-                document.getElementById('errorText').classList.remove('hidden');
-                document.getElementById('passwordInput').value = '';
-                document.getElementById('passwordInput').focus();
+                const err = document.getElementById('errorMsg');
+                err.classList.add('show');
+                setTimeout(() => err.classList.remove('show'), 2500);
+                input.value = '';
+                input.focus();
             }
         }
 
-        // Allow Enter key to submit password
-        document.addEventListener('DOMContentLoaded', () => {
-            const passwordInput = document.getElementById('passwordInput');
-            if (passwordInput) {
-                passwordInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') checkPassword();
-                });
-            }
-        });
+        // ═══ RENDER CANVAS - Matches editor exactly ═══
+        function renderCanvas(elements) {
+            const layer = document.getElementById('contentLayer');
+            layer.innerHTML = '';
 
-        // Render canvas elements
-        function renderCanvas() {
-            if (!canvasData || !canvasData.elements) return;
+            if (!elements || !elements.length) return;
 
-            const contentLayer = document.getElementById('contentLayer');
-            contentLayer.innerHTML = '';
-
-            // Set background color if saved
-            if (canvasData.backgroundColor || canvasData.bgColor) {
-                document.body.style.background = canvasData.backgroundColor || canvasData.bgColor;
-            }
-
-            // Set footer text if saved
-            if (canvasData.footerText) {
-                const backdrop = document.getElementById('fixedBouquet');
-                if (backdrop) {
-                    backdrop.dataset.footerText = canvasData.footerText;
-                }
-            }
-
-            // Render each element
-            canvasData.elements.forEach(element => {
+            elements.forEach(data => {
                 try {
-                    const el = createViewElement(element);
-                    if (el) contentLayer.appendChild(el);
+                    const el = document.createElement('div');
+
+                    // Apply classes exactly as saved
+                    el.className = data.classes || `canvas-element el-${data.type}`;
+
+                    // Apply position and size
+                    el.style.left = data.left || '0px';
+                    el.style.top = data.top || '0px';
+                    el.style.width = data.width || 'auto';
+                    el.style.height = data.height || 'auto';
+                    el.style.zIndex = data.zIndex || 10;
+
+                    // Apply transform (rotation etc)
+                    if (data.transform) el.style.transform = data.transform;
+
+                    // Render the element's saved HTML directly - this is the key!
+                    // The editor saves full contentHTML for every element
+                    if (data.contentHTML) {
+                        el.innerHTML = data.contentHTML;
+
+                        // For letters: make envelope clickable
+                        if (data.type === 'letter') {
+                            el.style.background = data.letterBg || 'transparent';
+                            el.style.padding = '0';
+                            el.style.borderRadius = '8px';
+                            el.style.display = 'flex';
+                            el.style.alignItems = 'center';
+                            el.style.justifyContent = 'center';
+
+                            const envView = el.querySelector('.envelope-view');
+                            if (envView) {
+                                envView.style.cursor = 'pointer';
+                                envView.onclick = () => openLetter(data);
+                            }
+                        }
+
+                        // For videos: re-enable pointer events for controls
+                        if (data.type === 'video') {
+                            const media = el.querySelector('video, iframe');
+                            if (media) media.style.pointerEvents = 'auto';
+                        }
+
+                        // For music: enable audio controls
+                        if (data.type === 'music') {
+                            const media = el.querySelector('audio, iframe');
+                            if (media) media.style.pointerEvents = 'auto';
+                        }
+                    }
+
+                    // Store data for letter opening
+                    el.dataset.letterText = data.letterText || '';
+                    el.dataset.letterBg = data.letterBg || '#ff69b4';
+                    el.dataset.letterFontSize = data.letterFontSize || 'medium';
+                    el.dataset.letterTextAlign = data.letterTextAlign || 'center';
+
+                    layer.appendChild(el);
                 } catch (err) {
-                    console.error('Failed to render element:', element, err);
+                    console.warn('Failed to render element:', data, err);
                 }
             });
         }
 
-        // Create view-only element
-        function createViewElement(data) {
-            const el = document.createElement('div');
-            el.className = `canvas-element el-${data.type}`;
-            el.style.left = data.left || data.x || '0px';
-            el.style.top = data.top || data.y || '0px';
-            el.style.width = data.width || '200px';
-            el.style.height = data.height || '200px';
-            el.style.zIndex = data.zIndex || 10;
-
-            if (data.transform) el.style.transform = data.transform;
-            if (data.rotation) el.style.transform = `rotate(${data.rotation}deg)`;
-
-            // Apply frame class for images
-            if (data.type === 'image' && data.classes) {
-                data.classes.split(' ').forEach(cls => {
-                    if (cls.startsWith('frame-')) el.classList.add(cls);
-                });
-            }
-
-            // Render content based on type
-            if (data.contentHTML) {
-                el.innerHTML = data.contentHTML;
-            } else {
-                switch (data.type) {
-                    case 'image':
-                        const img = document.createElement('img');
-                        img.className = 'el-content';
-                        img.src = data.src || data.content;
-                        el.appendChild(img);
-                        break;
-
-                    case 'video':
-                        const mediaSrc = data.src || data.content || '';
-                        if (data.isEmbed || mediaSrc.includes('youtube') || mediaSrc.includes('youtu.be')) {
-                            const iframe = document.createElement('iframe');
-                            iframe.src = mediaSrc;
-                            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-                            iframe.allowFullscreen = true;
-                            iframe.className = 'el-content';
-                            el.appendChild(iframe);
-                        } else {
-                            const video = document.createElement('video');
-                            video.src = mediaSrc;
-                            video.controls = true;
-                            video.className = 'el-content';
-                            el.appendChild(video);
-                        }
-                        break;
-
-                    case 'music':
-                        const audio = document.createElement('audio');
-                        audio.src = data.src || data.content;
-                        audio.controls = true;
-                        audio.className = 'el-content';
-                        el.appendChild(audio);
-                        break;
-
-                    case 'letter':
-                        const envelope = document.createElement('div');
-                        envelope.className = 'envelope-view';
-                        envelope.onclick = () => openLetter(data);
-                        el.appendChild(envelope);
-                        if (data.letterBg) el.style.background = data.letterBg;
-                        break;
-
-                    case 'sticker':
-                        el.textContent = data.content || data.letterText || '❤️';
-                        break;
-                }
-            }
-
-            return el;
-        }
-
-        // Open letter viewer
+        // ═══ LETTER VIEWER ═══
         function openLetter(data) {
             const viewer = document.getElementById('letterViewer');
-            const textEl = document.getElementById('letterText');
+            const textEl = document.getElementById('letterBodyText');
+            const paper = document.getElementById('letterPaper');
 
+            const sizeMap = { small: '16px', medium: '20px', big: '26px' };
             textEl.textContent = data.letterText || '';
-            textEl.style.fontSize = data.letterFontSize === 'small' ? '16px' : data.letterFontSize === 'big' ? '26px' : '20px';
+            textEl.style.fontSize = sizeMap[data.letterFontSize] || '20px';
             textEl.style.textAlign = data.letterTextAlign || 'center';
 
-            if (data.letterBg) {
-                viewer.querySelector('.letter-paper').style.background = data.letterBg;
-            }
+            if (data.letterBg) paper.style.background = data.letterBg;
 
-            viewer.classList.add('active');
+            viewer.classList.add('open');
         }
 
-        // Close letter viewer
-        function closeLetterViewer() {
-            document.getElementById('letterViewer').classList.remove('active');
+        function closeLetter() {
+            document.getElementById('letterViewer').classList.remove('open');
         }
 
-        // Click outside to close
-        const letterViewerEl = document.getElementById('letterViewer');
-        if (letterViewerEl) {
-            letterViewerEl.addEventListener('click', (e) => {
-                if (e.target.id === 'letterViewer') closeLetterViewer();
-            });
-        }
-
-        // Show error
-        function showError(message) {
-            const loading = document.getElementById('loading');
-            if (loading) {
-                loading.innerHTML = `
+        // ═══ ERROR STATE ═══
+        function showError(title, message) {
+            const loading = document.getElementById('loadingScreen');
+            loading.classList.remove('hidden');
+            loading.innerHTML = `
                 <div style="text-align:center; padding:40px;">
-                    <div style="font-size:64px; margin-bottom:20px;">💔</div>
-                    <h2 style="color:#1a1a1c; margin-bottom:12px;">Oops!</h2>
-                    <p style="color:#666; font-size:16px;">${message}</p>
-                    <button onclick="window.location.reload()" style="margin-top:20px; padding:10px 20px; border-radius:8px; border:none; background:#eee; cursor:pointer;">Try Again</button>
-                </div>
-            `;
-                loading.classList.remove('hidden');
-            }
+                    <div style="font-size:56px; margin-bottom:20px;">💔</div>
+                    <h2 style="color:#1a1a1c; font-size:22px; margin-bottom:10px; font-family:'Playfair Display',serif;">${title}</h2>
+                    <p style="color:#888; font-size:14px; max-width:300px; margin:0 auto;">${message}</p>
+                </div>`;
         }
-
-        // Start loading with timeout
-        const loadTimeout = setTimeout(() => {
-            const loading = document.getElementById('loading');
-            if (loading && !loading.classList.contains('hidden')) {
-                showError('Connection timed out. Please check your internet or try refreshing.');
-            }
-        }, 15000); // 15 seconds timeout
-
-        loadCanvas().then(() => {
-            clearTimeout(loadTimeout);
-        }).catch(err => {
-            clearTimeout(loadTimeout);
-            showError('Unexpected error: ' + err.message);
-        });
     </script>
 </body>
 
