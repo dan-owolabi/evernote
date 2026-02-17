@@ -47,9 +47,11 @@
             position: relative;
             width: 100%;
             height: 100%;
+            min-height: 100vh;
             background: #fdfdfd;
             box-shadow: 0 0 100px rgba(0, 0, 0, 0.02);
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
 
         .content-layer {
@@ -100,6 +102,31 @@
             border-radius: 8px;
             border: none;
             pointer-events: none;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
+        /* Mobile-specific adjustments */
+        @media (max-width: 768px) {
+            .canvas-element {
+                max-width: 95vw !important;
+            }
+
+            .el-image,
+            .el-video,
+            .el-music {
+                min-width: 120px;
+                min-height: 120px;
+            }
+
+            .el-sticker {
+                font-size: clamp(32px, 10vw, 72px);
+            }
+
+            .fixed-backdrop img {
+                width: 200%;
+                height: 200%;
+            }
         }
 
         /* IMAGE FRAMES - exact from editor */
@@ -464,22 +491,6 @@
             border-radius: 24px;
             padding: 28px 24px 24px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            transition: all 0.3s ease;
-        }
-
-        .spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid rgba(255, 77, 109, 0.3);
-            border-top: 3px solid #ff4d6d;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
         }
 
         .lock-input {
@@ -740,70 +751,61 @@
         window.addEventListener('load', async () => {
             spawnHearts();
 
-            // Set loading state
-            const title = document.querySelector('.lock-title');
-            const qEl = document.getElementById('lockQuestion');
-            const area = document.getElementById('inputArea');
-
-            if (title) title.textContent = 'Loading...';
-            if (qEl) qEl.textContent = 'Fetching your bouquet';
-            area.innerHTML = `
-                <div style="display:flex;flex-direction:column;align-items:center;padding:20px 0;">
-                    <div class="spinner"></div>
-                    <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:12px;" id="loadingDebug">Connecting...</div>
+            document.getElementById('inputArea').innerHTML = `
+                <div style="text-align:center;padding:20px 0;color:rgba(255,200,210,0.5);font-size:14px;">
+                    Loading...
                 </div>`;
 
             const id = getCanvasId();
-            if (!id) {
-                return showLockError('No bouquet ID found. Please check your link.');
-            }
-
-            document.getElementById('loadingDebug').textContent = `Looking for: ${id}`;
+            if (!id) { showLockError('No bouquet link found.'); return; }
 
             try {
-                // Determine if UUID or Name
-                const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+                // Race against a 15-second timeout
+                const fetchPromise = fetchCanvas(id);
+                const timeout = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Request timed out. Please try again.')), 15000)
+                );
+                const data = await Promise.race([fetchPromise, timeout]);
 
-                let query = supabaseClient.from('canvases').select('*'); // Select all cols including security
-                if (isUUID) {
-                    query = query.eq('id', id);
-                } else {
-                    query = query.eq('canvas_data->>name', id);
-                }
-
-                // 15-second timeout race
-                const { data, error } = await Promise.race([
-                    query.maybeSingle(),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timed out (15s)')), 15000))
-                ]);
-
-                if (error) throw error;
-                if (!data) {
-                    return showLockError(`Bouquet not found (${id}).`);
-                }
+                if (!data) { showLockError('Bouquet not found. Check the link.'); return; }
 
                 canvasData = data.canvas_data;
 
-                // Handle Security
                 if (canvasData?.security && canvasData.security.type !== 'none') {
                     securityConfig = canvasData.security;
-                    if (title) title.textContent = 'Protected Bouquet';
-                    if (qEl) qEl.textContent = securityConfig.question || 'Unlock to view';
                     buildLockScreen();
                 } else {
-                    // Success -> Hide lock screen
-                    lockScreen.style.opacity = '0';
-                    setTimeout(() => lockScreen.classList.add('hidden'), 500);
+                    lockScreen.classList.add('hidden');
                     renderCanvas();
                 }
-
             } catch (err) {
-                console.error('Load Error:', err);
-                const title = document.querySelector('.lock-title');
-                if (title) title.textContent = 'Error';
-                showLockError(err.message || 'Failed to load bouquet.');
+                showLockError(err.message || 'Failed to load. Please try again.');
             }
         });
+
+        async function fetchCanvas(id) {
+            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+            if (isUUID) {
+                const { data, error } = await supabaseClient
+                    .from('canvases').select('*').eq('id', id).maybeSingle();
+                if (error) throw new Error(error.message);
+                return data;
+            }
+
+            // Name lookup - try the JSONB field first
+            const { data: d1, error: e1 } = await supabaseClient
+                .from('canvases').select('*')
+                .eq('canvas_data->>name', id).maybeSingle();
+            if (d1) return d1;
+
+            // Fallback: scan all and find name inside JSON
+            const { data: all, error: e2 } = await supabaseClient
+                .from('canvases').select('*').limit(200);
+            if (e2) throw new Error(e2.message);
+            if (!all) return null;
+            return all.find(row => row.canvas_data?.name === id) || null;
+        }
 
         // ═══ FLOATING HEARTS ═══
         function spawnHearts() {
@@ -824,6 +826,8 @@
         // ═══ LOCK SCREEN BUILDER ═══
         function buildLockScreen() {
             const type = securityConfig.type || 'text';
+            document.getElementById('lockQuestion').textContent =
+                securityConfig.question || 'Enter the answer to unlock';
             const area = document.getElementById('inputArea');
 
             if (type === 'date_short') {
@@ -932,6 +936,11 @@
 
             let correct = (securityConfig.answer || '').trim().toLowerCase();
 
+            // Normalize full dates
+            if (type === 'date' || type === 'date_full') {
+                // both should be YYYY-MM-DD, compare directly
+            }
+
             if (val === correct) {
                 lockScreen.classList.add('hidden');
                 document.getElementById('heartsBg').style.display = 'none';
@@ -952,13 +961,11 @@
         }
 
         function showLockError(msg) {
-            // Keep the spinner hidden maybe? Or just replace area content
+            document.getElementById('lockQuestion').textContent = msg;
             document.getElementById('inputArea').innerHTML = `
-                <div style="text-align:center;padding:16px 0;color:rgba(255,150,150,0.9);font-size:14px;font-weight:500;">
+                <div style="text-align:center;padding:16px 0;color:rgba(255,150,150,0.7);font-size:13px;">
                     ${msg}
                 </div>`;
-            const q = document.getElementById('lockQuestion');
-            if (q) q.textContent = 'Error';
         }
 
         // ═══ RENDER CANVAS - matches editor's applyCanvasState exactly ═══
