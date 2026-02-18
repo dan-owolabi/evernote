@@ -3658,26 +3658,7 @@
             lastAppliedLayoutMode = mode;
         }
 
-        function normalizeElementRecord(r) {
-            return {
-                id: r.id || r.elementId || Date.now().toString(36) + Math.random().toString(36).substr(2),
-                type: r.type,
-                left: r.left || '0px',
-                top: r.top || '0px',
-                width: r.width,
-                height: r.height,
-                zIndex: r.zIndex,
-                transform: r.transform,
-                rotation: r.rotation,
-                contentHTML: r.contentHTML,
-                src: r.src,
-                classes: r.classes,
-                letterText: r.letterText,
-                letterBg: r.letterBg,
-                letterFontSize: r.letterFontSize,
-                letterTextAlign: r.letterTextAlign
-            };
-        }
+
 
         function collectCanvasState() {
             const elements = [];
