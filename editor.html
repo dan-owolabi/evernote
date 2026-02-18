@@ -3631,15 +3631,14 @@
                                 e.target.closest('.media-close-btn') || e.target.closest('.music-drag-handle')) return;
                             editSelectedLetter();
                         };
-                        el.style.background = normalized.letterBg || '#ff69b4';
-                        el.style.color = 'black';
-                        el.style.padding = '10px';
-                        el.style.borderRadius = '8px';
+                        // NO background on wrapper - envelope.png handles the visual
+                        el.style.background = 'transparent';
+                        el.style.padding = '0';
+                        el.style.borderRadius = '0';
+                        el.style.boxShadow = 'none';
                         el.style.display = 'flex';
                         el.style.alignItems = 'center';
                         el.style.justifyContent = 'center';
-                        el.style.textAlign = 'center';
-                        el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
                     }
 
                     (contentLayer || canvas).appendChild(el);

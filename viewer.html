@@ -991,129 +991,6 @@
         }
 
         // ═══ RENDER CANVAS - matches editor's applyCanvasState exactly ═══
-        function renderCanvas() {
-            if (!canvasData) return;
-
-            const elements = Array.isArray(canvasData) ? canvasData : (canvasData.elements || []);
-            const isMobile = window.innerWidth < 768;
-
-            // Apply background
-            if (canvasData.bgColor) {
-                canvas.style.background = canvasData.bgColor;
-                document.body.style.background = canvasData.bgColor;
-            }
-
-            // Apply footer text
-            const ft = document.getElementById('footerText');
-            if (canvasData.footerText) {
-                ft.innerText = canvasData.footerText;
-                ft.style.display = 'block';
-            }
-
-            contentLayer.innerHTML = '';
-
-            elements.forEach((data, idx) => {
-                try {
-                    const resolvedType = data.type;
-                    const el = document.createElement('div');
-                    el.className = data.classes || `canvas-element el-${resolvedType}`;
-
-                    // Parse and adjust positions for mobile
-                    let left = data.left || '0px';
-                    let top = data.top || '0px';
-                    let width = data.width || '200px';
-                    let height = data.height || '200px';
-
-                    if (isMobile) {
-                        // Constrain left position (max 75% to leave room for width)
-                        if (left.includes('%')) {
-                            left = Math.min(75, parseFloat(left)) + '%';
-                        } else if (left.includes('px')) {
-                            const leftPct = (parseFloat(left) / 1000) * 100;
-                            left = Math.min(75, Math.max(5, leftPct)) + '%';
-                        }
-
-                        // Constrain top
-                        if (top.includes('%')) {
-                            top = Math.max(5, parseFloat(top)) + '%';
-                        } else if (top.includes('px')) {
-                            const topPct = (parseFloat(top) / 800) * 100;
-                            top = Math.max(5, topPct) + '%';
-                        }
-
-                        // Scale width (max 80% of screen)
-                        if (width.includes('%')) {
-                            const w = parseFloat(width);
-                            width = Math.min(80, w > 35 ? w * 0.7 : w) + '%';
-                        } else if (width.includes('px')) {
-                            const wpx = parseFloat(width);
-                            width = Math.min(300, wpx > 200 ? wpx * 0.65 : wpx) + 'px';
-                        }
-
-                        // Scale height
-                        if (height.includes('%')) {
-                            const h = parseFloat(height);
-                            height = Math.min(65, h > 35 ? h * 0.7 : h) + '%';
-                        } else if (height.includes('px')) {
-                            const hpx = parseFloat(height);
-                            height = Math.min(350, hpx > 200 ? hpx * 0.65 : hpx) + 'px';
-                        }
-                    }
-
-                    el.style.left = left;
-                    el.style.top = top;
-                    el.style.width = width;
-                    el.style.height = height;
-                    el.style.zIndex = data.zIndex || '10';
-                    el.style.transform = data.transform || '';
-                    el.style.display = 'block';
-
-                    el.dataset.letterText = data.letterText || '';
-                    el.dataset.letterBg = data.letterBg || '#ff69b4';
-                    el.dataset.letterFontSize = data.letterFontSize || 'medium';
-                    el.dataset.letterTextAlign = data.letterTextAlign || 'center';
-
-                    el.innerHTML = data.contentHTML || '';
-
-                    // LETTER: transparent wrapper
-                    if (resolvedType === 'letter') {
-                        el.style.background = 'transparent';
-                        el.style.padding = '0';
-                        el.style.borderRadius = '0';
-                        el.style.boxShadow = 'none';
-                        el.style.display = 'flex';
-                        el.style.alignItems = 'center';
-                        el.style.justifyContent = 'center';
-                        el.style.cursor = 'pointer';
-                        el.onclick = () => openLetterViewer(
-                            el.dataset.letterText,
-                            el.dataset.letterBg,
-                            el.dataset.letterFontSize,
-                            el.dataset.letterTextAlign
-                        );
-                    }
-
-                    // IMAGES & VIDEOS: clickable
-                    if (resolvedType === 'image' || resolvedType === 'video') {
-                        el.style.cursor = 'pointer';
-                        el.onclick = () => openMediaViewer(el, resolvedType);
-                    }
-
-                    // MUSIC: enable interaction
-                    if (resolvedType === 'music') {
-                        const iframe = el.querySelector('iframe.el-content');
-                        if (iframe) iframe.style.pointerEvents = 'auto';
-                        const audio = el.querySelector('audio');
-                        if (audio) audio.style.pointerEvents = 'auto';
-                    }
-
-                    contentLayer.appendChild(el);
-                } catch (err) {
-                    console.warn('Failed to render element:', data, err);
-                }
-            });
-        }
-
         // ═══ LETTER VIEWER - exact same as editor ═══
         function escapeHtml(value) {
             return String(value)
@@ -1231,3 +1108,114 @@
 </body>
 
 </html>
+
+// ═══ RENDER CANVAS WITH SMART MOBILE POSITIONING ═══
+function renderCanvas() {
+if (!canvasData) return;
+
+const elements = Array.isArray(canvasData) ? canvasData : (canvasData.elements || []);
+const isMobile = window.innerWidth < 768; // Apply background if (canvasData.bgColor) {
+    canvas.style.background=canvasData.bgColor; document.body.style.background=canvasData.bgColor; } // Apply footer
+    text const ft=document.getElementById('footerText'); if (canvasData.footerText) {
+    ft.innerText=canvasData.footerText; ft.style.display='block' ; } contentLayer.innerHTML='' ; elements.forEach((data,
+    idx)=> {
+    try {
+    const resolvedType = data.type;
+    const el = document.createElement('div');
+    el.className = data.classes || `canvas-element el-${resolvedType}`;
+
+    // Parse and adjust positions for mobile
+    let left = data.left || '0px';
+    let top = data.top || '0px';
+    let width = data.width || '200px';
+    let height = data.height || '200px';
+
+    if (isMobile) {
+    // Constrain left position (max 75% to leave room for width)
+    if (left.includes('%')) {
+    left = Math.min(75, parseFloat(left)) + '%';
+    } else if (left.includes('px')) {
+    const leftPct = (parseFloat(left) / 1000) * 100;
+    left = Math.min(75, Math.max(5, leftPct)) + '%';
+    }
+
+    // Constrain top
+    if (top.includes('%')) {
+    top = Math.max(5, parseFloat(top)) + '%';
+    } else if (top.includes('px')) {
+    const topPct = (parseFloat(top) / 800) * 100;
+    top = Math.max(5, topPct) + '%';
+    }
+
+    // Scale width (max 80% of screen)
+    if (width.includes('%')) {
+    const w = parseFloat(width);
+    width = Math.min(80, w > 35 ? w * 0.7 : w) + '%';
+    } else if (width.includes('px')) {
+    const wpx = parseFloat(width);
+    width = Math.min(300, wpx > 200 ? wpx * 0.65 : wpx) + 'px';
+    }
+
+    // Scale height
+    if (height.includes('%')) {
+    const h = parseFloat(height);
+    height = Math.min(65, h > 35 ? h * 0.7 : h) + '%';
+    } else if (height.includes('px')) {
+    const hpx = parseFloat(height);
+    height = Math.min(350, hpx > 200 ? hpx * 0.65 : hpx) + 'px';
+    }
+    }
+
+    el.style.left = left;
+    el.style.top = top;
+    el.style.width = width;
+    el.style.height = height;
+    el.style.zIndex = data.zIndex || '10';
+    el.style.transform = data.transform || '';
+    el.style.display = 'block';
+
+    el.dataset.letterText = data.letterText || '';
+    el.dataset.letterBg = data.letterBg || '#ff69b4';
+    el.dataset.letterFontSize = data.letterFontSize || 'medium';
+    el.dataset.letterTextAlign = data.letterTextAlign || 'center';
+
+    el.innerHTML = data.contentHTML || '';
+
+    // LETTER: transparent wrapper
+    if (resolvedType === 'letter') {
+    el.style.background = 'transparent';
+    el.style.padding = '0';
+    el.style.borderRadius = '0';
+    el.style.boxShadow = 'none';
+    el.style.display = 'flex';
+    el.style.alignItems = 'center';
+    el.style.justifyContent = 'center';
+    el.style.cursor = 'pointer';
+    el.onclick = () => openLetterViewer(
+    el.dataset.letterText,
+    el.dataset.letterBg,
+    el.dataset.letterFontSize,
+    el.dataset.letterTextAlign
+    );
+    }
+
+    // IMAGES & VIDEOS: clickable
+    if (resolvedType === 'image' || resolvedType === 'video') {
+    el.style.cursor = 'pointer';
+    el.onclick = () => openMediaViewer(el, resolvedType);
+    }
+
+    // MUSIC: enable interaction
+    if (resolvedType === 'music') {
+    const iframe = el.querySelector('iframe.el-content');
+    if (iframe) iframe.style.pointerEvents = 'auto';
+    const audio = el.querySelector('audio');
+    if (audio) audio.style.pointerEvents = 'auto';
+    }
+
+    contentLayer.appendChild(el);
+    } catch (err) {
+    console.warn('Failed to render element:', data, err);
+    }
+    });
+    }
