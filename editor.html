@@ -2241,9 +2241,11 @@
                 rotation: raw.rotation,
                 transform: raw.transform
             });
-            const layouts = (raw.layouts && typeof raw.layouts === 'object') ? raw.layouts : {};
-            const desktopLayout = normalizeLayout(layouts[LAYOUT_DESKTOP], legacyLayout);
-            const mobileLayout = normalizeLayout(layouts[LAYOUT_MOBILE], desktopLayout);
+
+            // FORCE override: Ignore stale 'layouts' object. 
+            // The root properties (saved by collectCanvasState in pixels) are the single source of truth.
+            const desktopLayout = legacyLayout;
+            const mobileLayout = legacyLayout;
 
             return {
                 id: raw.id || raw.elementId || generateElementId(),
@@ -3735,6 +3737,11 @@
         let saveTimeout;
         function saveCanvas(forcePublish = false, securityConfig = null) {
             const state = collectCanvasState();
+            // Update lastCanvasState so that layout switches (desktop<->mobile) use the latest dragged positions
+            if (state && normalizeCanvasState) {
+                lastCanvasState = cloneDeep(normalizeCanvasState(state));
+            }
+
             if (securityConfig) state.security = securityConfig;
 
             try { localStorage.setItem('pinkBouquetCanvasId', canvasId); } catch (e) { }
