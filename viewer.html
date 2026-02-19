@@ -1020,52 +1020,10 @@
                     const el = document.createElement('div');
                     el.className = data.classes || `canvas-element el-${resolvedType}`;
 
-                    // Parse and adjust positions for mobile
-                    let left = data.left || '0px';
-                    let top = data.top || '0px';
-                    let width = data.width || '200px';
-                    let height = data.height || '200px';
-
-                    if (isMobile) {
-                        // Constrain left position (max 75% to leave room for width)
-                        if (left.includes('%')) {
-                            left = Math.min(75, parseFloat(left)) + '%';
-                        } else if (left.includes('px')) {
-                            const leftPct = (parseFloat(left) / 1000) * 100;
-                            left = Math.min(75, Math.max(5, leftPct)) + '%';
-                        }
-
-                        // Constrain top
-                        if (top.includes('%')) {
-                            top = Math.max(5, parseFloat(top)) + '%';
-                        } else if (top.includes('px')) {
-                            const topPct = (parseFloat(top) / 800) * 100;
-                            top = Math.max(5, topPct) + '%';
-                        }
-
-                        // Scale width (max 80% of screen)
-                        if (width.includes('%')) {
-                            const w = parseFloat(width);
-                            width = Math.min(80, w > 35 ? w * 0.7 : w) + '%';
-                        } else if (width.includes('px')) {
-                            const wpx = parseFloat(width);
-                            width = Math.min(300, wpx > 200 ? wpx * 0.65 : wpx) + 'px';
-                        }
-
-                        // Scale height
-                        if (height.includes('%')) {
-                            const h = parseFloat(height);
-                            height = Math.min(65, h > 35 ? h * 0.7 : h) + '%';
-                        } else if (height.includes('px')) {
-                            const hpx = parseFloat(height);
-                            height = Math.min(350, hpx > 200 ? hpx * 0.65 : hpx) + 'px';
-                        }
-                    }
-
-                    el.style.left = left;
-                    el.style.top = top;
-                    el.style.width = width;
-                    el.style.height = height;
+                    el.style.left = data.left || '0px';
+                    el.style.top = data.top || '0px';
+                    el.style.width = data.width || '200px';
+                    el.style.height = data.height || '200px';
                     el.style.zIndex = data.zIndex || '10';
                     el.style.transform = data.transform || '';
                     el.style.display = 'block';
