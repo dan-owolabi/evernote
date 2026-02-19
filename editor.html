@@ -3684,14 +3684,6 @@
             const canvasWidth = canvas.offsetWidth || 1000;
             const canvasHeight = canvas.offsetHeight || 800;
 
-            // Helper to convert px to %
-            function pxToPercent(pxValue, containerSize) {
-                if (!pxValue || pxValue === 'auto' || pxValue === '') return pxValue;
-                const num = parseFloat(pxValue);
-                if (isNaN(num)) return pxValue;
-                return ((num / containerSize) * 100).toFixed(2) + '%';
-            }
-
             document.querySelectorAll('.canvas-element').forEach(el => {
                 const type = el.classList.contains('el-image') ? 'image' :
                     el.classList.contains('el-video') ? 'video' :
@@ -3717,14 +3709,14 @@
                     content.letterTextAlign = el.dataset.letterTextAlign;
                 }
 
-                // Convert positions to percentages for responsiveness
+                // Save exact positions (pixels) to prevent layout shifting
                 elements.push({
                     id: el.dataset.elementId,
                     type,
-                    left: pxToPercent(el.style.left, canvasWidth),
-                    top: pxToPercent(el.style.top, canvasHeight),
-                    width: pxToPercent(el.style.width, canvasWidth),
-                    height: pxToPercent(el.style.height, canvasHeight),
+                    left: el.style.left,
+                    top: el.style.top,
+                    width: el.style.width,
+                    height: el.style.height,
                     zIndex: el.style.zIndex,
                     transform: el.style.transform,
                     rotation: el.dataset.rotation,
