@@ -119,39 +119,54 @@
             border-radius: 8px;
             border: none;
             pointer-events: none;
-            max-width: 100%;
-            object-fit: contain;
         }
 
-        /* Mobile-specific adjustments */
-        @media (max-width: 768px) {
-            .canvas {
-                min-height: 100vh;
-                padding: 0;
-                overflow-x: hidden;
-                overflow-y: auto;
-            }
-
-            .fixed-backdrop img {
-                width: 250%;
-                height: 250%;
-            }
-
-            /* Let the wrapper handle scaling, just ensure content doesn't break */
-            .el-content {
-                max-width: 100%;
-                object-fit: contain;
-            }
+        /* Letter element */
+        .el-letter {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* Tablet adjustments */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            .canvas-element {
-                max-width: 85% !important;
-            }
+        /* Envelope visual for letter element */
+        .envelope-view {
+            width: 100%;
+            height: 100%;
+            background: url('envelope.png') center/cover;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
         }
 
-        /* IMAGE FRAMES - exact from editor */
+        /* Sticker element */
+        .el-sticker {
+            font-size: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Handwriting element */
+        .el-handwriting {
+            font-family: 'Caveat', cursive;
+            font-size: 36px;
+            padding: 12px;
+        }
+
+        /* Music element - allow full interaction */
+        .el-music {
+            pointer-events: auto;
+        }
+
+        .el-music iframe.el-content,
+        .el-music audio.el-content {
+            pointer-events: auto;
+        }
+
+        /* ═══════════════════════════════
+           IMAGE FRAMES
+           ═══════════════════════════════ */
         .frame-polaroid-pin {
             background: #fff;
             padding: 10px 10px 40px 10px;
@@ -174,6 +189,7 @@
             transform: rotate(15deg);
         }
 
+        /* Frame 2: Red Gallery Frame */
         .frame-red-gallery {
             background: #fff;
             padding: 20px;
@@ -186,6 +202,7 @@
             border-radius: 0;
         }
 
+        /* Frame 3: Classic Polaroid */
         .frame-classic-polaroid {
             background: #fff;
             padding: 12px 12px 48px 12px;
@@ -197,11 +214,30 @@
             border-radius: 0;
         }
 
+        /* Frame 4: Polaroid */
         .frame-polaroid {
             padding: 4% 4% 14% 4% !important;
             background: #fff !important;
             box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1) !important;
             border-radius: 2px !important;
+        }
+
+        /* Frame 5: Shadow */
+        .frame-shadow {
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        /* Frame 6: Stroke */
+        .frame-stroke {
+            padding: 0;
+            border: none;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .frame-stroke .el-content {
+            border-radius: 8px;
         }
 
         .frame-rounded {
@@ -222,37 +258,6 @@
             border-radius: 50%;
         }
 
-        .frame-shadow {
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3) !important;
-        }
-
-        /* Music */
-        .el-music iframe.el-content {
-            pointer-events: auto;
-        }
-
-        /* Letter */
-        .el-letter {
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .envelope-view {
-            width: 100%;
-            height: 100%;
-            background: url('envelope.png') center/cover;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-        }
-
-        /* Sticker */
-        .el-sticker {
-            font-size: 72px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
         /* ═══════════════════════════════
            LETTER VIEWER - EXACT FROM EDITOR
            ═══════════════════════════════ */
@@ -271,23 +276,6 @@
 
         .letter-viewer-overlay.active {
             display: flex;
-        }
-
-        .letter-editor-fullscreen {
-            width: 45vw;
-            min-width: 340px;
-            max-width: 560px;
-            height: 92vh;
-            border-radius: 24px;
-            padding: 48px 32px 32px;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 30px 100px rgba(0, 0, 0, 0.3);
-            animation: letterSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: default;
         }
 
         @keyframes letterSlideUp {
@@ -312,18 +300,7 @@
             position: relative;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
             border: 1px solid rgba(255, 182, 193, 0.3);
-            display: flex;
-            flex-direction: column;
-            overflow: visible;
-        }
-
-        .letter-paper-card .texture {
-            position: absolute;
-            inset: 0;
-            opacity: 0.05;
-            pointer-events: none;
-            background-image: url('https://www.transparenttextures.com/patterns/natural-paper.png');
-            border-radius: 20px;
+            overflow-y: auto;
         }
 
         .letter-textarea {
@@ -1033,10 +1010,16 @@
                     el.dataset.letterFontSize = data.letterFontSize || 'medium';
                     el.dataset.letterTextAlign = data.letterTextAlign || 'center';
 
-                    el.innerHTML = data.contentHTML || '';
-
-                    // LETTER: transparent wrapper
                     if (resolvedType === 'letter') {
+                        // Letter: always ensure envelope-view is present.
+                        // contentHTML may contain it already, or it may be empty.
+                        const hasEnvelope = data.contentHTML && data.contentHTML.includes('envelope-view');
+                        if (hasEnvelope) {
+                            el.innerHTML = data.contentHTML;
+                        } else {
+                            // Rebuild envelope if missing
+                            el.innerHTML = '<div class="envelope-view"></div>';
+                        }
                         el.style.background = 'transparent';
                         el.style.padding = '0';
                         el.style.borderRadius = '0';
@@ -1051,20 +1034,30 @@
                             el.dataset.letterFontSize,
                             el.dataset.letterTextAlign
                         );
-                    }
-
-                    // IMAGES & VIDEOS: clickable
-                    if (resolvedType === 'image' || resolvedType === 'video') {
+                    } else if (resolvedType === 'image') {
+                        el.innerHTML = data.contentHTML || '';
+                        // If image loaded but src is missing/empty, show placeholder
+                        const img = el.querySelector('img');
+                        if (img && (!img.src || img.src === window.location.href)) {
+                            img.alt = '📷';
+                            img.style.fontSize = '48px';
+                        }
                         el.style.cursor = 'pointer';
                         el.onclick = () => openMediaViewer(el, resolvedType);
-                    }
-
-                    // MUSIC: enable interaction
-                    if (resolvedType === 'music') {
-                        const iframe = el.querySelector('iframe.el-content');
-                        if (iframe) iframe.style.pointerEvents = 'auto';
-                        const audio = el.querySelector('audio');
-                        if (audio) audio.style.pointerEvents = 'auto';
+                    } else if (resolvedType === 'video') {
+                        el.innerHTML = data.contentHTML || '';
+                        el.style.cursor = 'pointer';
+                        el.onclick = () => openMediaViewer(el, resolvedType);
+                    } else if (resolvedType === 'music') {
+                        el.innerHTML = data.contentHTML || '';
+                        // Enable all interactive elements inside music player
+                        el.querySelectorAll('iframe, audio').forEach(m => {
+                            m.style.pointerEvents = 'auto';
+                        });
+                        // Also allow clicks on the whole element to reach iframe
+                        el.style.pointerEvents = 'auto';
+                    } else {
+                        el.innerHTML = data.contentHTML || '';
                     }
 
                     contentLayer.appendChild(el);
