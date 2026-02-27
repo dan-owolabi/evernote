@@ -3458,12 +3458,19 @@
         }
 
         async function saveCanvasToIndexedDb(id, state) {
-            const normalized = normalizeCanvasState(state);
+            // Save RAW state directly - never normalize here so contentHTML (base64 images etc.) is preserved exactly.
             const db = await openEditorDb();
+            const safeState = state && typeof state === 'object' ? state : {};
             await new Promise((resolve, reject) => {
                 const tx = db.transaction(editorDbStore, 'readwrite');
                 const store = tx.objectStore(editorDbStore);
-                store.put({ id, state: normalized, elements: normalized.elements, footerText: normalized.footerText, updatedAt: Date.now() });
+                store.put({
+                    id,
+                    state: safeState,
+                    elements: Array.isArray(safeState.elements) ? safeState.elements : [],
+                    footerText: safeState.footerText || '',
+                    updatedAt: Date.now()
+                });
                 tx.oncomplete = () => resolve();
                 tx.onerror = () => reject(tx.error || new Error('Failed to save IndexedDB canvas'));
             });
@@ -3473,9 +3480,22 @@
         function saveCanvasToLocalStorage(state, updatedAt = Date.now()) {
             if (!state || !Array.isArray(state.elements)) return false;
             try {
+                // Strip contentHTML from media elements to avoid localStorage quota failures.
+                // IndexedDB is the full-data store; localStorage is a lightweight positions backup.
+                const lightElements = state.elements.map(el => {
+                    const type = el.type || '';
+                    if (type === 'image' || type === 'video') {
+                        // Keep everything except the potentially huge base64 contentHTML
+                        const { contentHTML, ...rest } = el;
+                        return { ...rest, contentHTML: '' };
+                    }
+                    return el;
+                });
+                const ts = String(Number(updatedAt) || Date.now());
+                // Write timestamp first - this always succeeds even if elements are too large
+                localStorage.setItem(localCanvasUpdatedAtKey, ts);
                 localStorage.setItem('pinkBouquetCanvasId', canvasId);
-                localStorage.setItem(localCanvasKey, JSON.stringify(state.elements));
-                localStorage.setItem(localCanvasUpdatedAtKey, String(Number(updatedAt) || Date.now()));
+                localStorage.setItem(localCanvasKey, JSON.stringify(lightElements));
                 return true;
             } catch (err) {
                 console.warn('LocalStorage save failed:', err);
@@ -3906,19 +3926,26 @@
         async function restoreCanvas() {
             console.log('restoreCanvas STARTED for ID:', canvasId);
             let restoredState = null;
-            const localSnapshot = loadCanvasFromLocalStorage();
-            let indexedDbSnapshot = null;
 
+            // ALWAYS prefer IndexedDB - it's the full-data store (has images/video base64 content).
+            // localStorage only has positions/metadata (contentHTML stripped to avoid quota issues).
+            let indexedDbSnapshot = null;
             try {
                 indexedDbSnapshot = await loadCanvasFromIndexedDb(canvasId);
             } catch (err) {
                 console.warn('IndexedDB restore failed:', (err && err.message) || err);
             }
 
-            const freshestSnapshot = pickFreshestSnapshot(localSnapshot, indexedDbSnapshot);
-            if (freshestSnapshot && freshestSnapshot.snapshot && freshestSnapshot.snapshot.state) {
-                restoredState = freshestSnapshot.snapshot.state;
-                console.log(`Restored from ${freshestSnapshot.source}`);
+            if (indexedDbSnapshot && indexedDbSnapshot.state) {
+                restoredState = indexedDbSnapshot.state;
+                console.log('Restored from IndexedDB (primary store)');
+            } else {
+                // IndexedDB had nothing - fall back to localStorage (positions only, no images)
+                const localSnapshot = loadCanvasFromLocalStorage();
+                if (localSnapshot && localSnapshot.state) {
+                    restoredState = localSnapshot.state;
+                    console.log('Restored from localStorage (fallback - images may be missing)');
+                }
             }
 
             if (!restoredState) {
