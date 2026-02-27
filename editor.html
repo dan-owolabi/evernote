@@ -2231,33 +2231,62 @@
             };
         }
 
-        function normalizeElementRecord(raw) {
-            const legacyLayout = normalizeLayout({
-                left: raw.left,
-                top: raw.top,
-                width: raw.width,
-                height: raw.height,
-                zIndex: raw.zIndex,
-                rotation: raw.rotation,
-                transform: raw.transform
-            });
+        function hasAnyLayoutValues(layout) {
+            if (!layout || typeof layout !== 'object') return false;
+            return ['left', 'top', 'width', 'height', 'zIndex', 'rotation', 'transform']
+                .some((key) => layout[key] !== undefined && layout[key] !== null && layout[key] !== '');
+        }
 
-            // FORCE override: Ignore stale 'layouts' object. 
-            // The root properties (saved by collectCanvasState in pixels) are the single source of truth.
-            const desktopLayout = legacyLayout;
-            const mobileLayout = legacyLayout;
+        function normalizeElementRecord(raw) {
+            const source = raw && typeof raw === 'object' ? raw : {};
+
+            // ROOT LEVEL POSITIONS ARE ALWAYS THE SOURCE OF TRUTH.
+            // They reflect the latest dragged position. Layouts.desktop is only
+            // used as fallback when root values are completely absent.
+            const hasRootPos = source.left !== undefined || source.top !== undefined;
+
+            const incomingLayouts = (source.layouts && typeof source.layouts === 'object') ? source.layouts : {};
+            const desktopCandidate = incomingLayouts[LAYOUT_DESKTOP] || incomingLayouts.desktop;
+            const mobileCandidate = incomingLayouts[LAYOUT_MOBILE] || incomingLayouts.mobile;
+
+            // If root-level left/top exist, they ALWAYS win over layouts.desktop
+            const effectiveDesktop = hasRootPos
+                ? normalizeLayout({
+                    left: source.left,
+                    top: source.top,
+                    width: source.width,
+                    height: source.height,
+                    zIndex: source.zIndex,
+                    rotation: source.rotation,
+                    transform: source.transform
+                })
+                : (hasAnyLayoutValues(desktopCandidate)
+                    ? normalizeLayout(desktopCandidate)
+                    : normalizeLayout({ left: '0px', top: '0px' }));
+
+            const mobileLayout = hasAnyLayoutValues(mobileCandidate)
+                ? normalizeLayout(mobileCandidate, effectiveDesktop)
+                : effectiveDesktop;
 
             return {
-                id: raw.id || raw.elementId || generateElementId(),
-                type: raw.type || ((raw.classes || '').match(/el-(\w+)/) || [])[1] || 'image',
-                letterText: raw.letterText || '',
-                letterBg: raw.letterBg || '#ff69b4',
-                letterFontSize: raw.letterFontSize || 'medium',
-                letterTextAlign: raw.letterTextAlign || 'center',
-                contentHTML: raw.contentHTML || '',
-                classes: (raw.classes || '').replace(/\s+/g, ' ').trim(),
+                id: source.id || source.elementId || generateElementId(),
+                type: source.type || ((source.classes || '').match(/el-(\w+)/) || [])[1] || 'image',
+                left: effectiveDesktop.left,
+                top: effectiveDesktop.top,
+                width: effectiveDesktop.width,
+                height: effectiveDesktop.height,
+                zIndex: effectiveDesktop.zIndex,
+                transform: effectiveDesktop.transform,
+                rotation: effectiveDesktop.rotation,
+                src: source.src,
+                letterText: source.letterText || '',
+                letterBg: source.letterBg || '#ff69b4',
+                letterFontSize: source.letterFontSize || 'medium',
+                letterTextAlign: source.letterTextAlign || 'center',
+                contentHTML: source.contentHTML || '',
+                classes: (source.classes || '').replace(/\s+/g, ' ').trim(),
                 layouts: {
-                    [LAYOUT_DESKTOP]: desktopLayout,
+                    [LAYOUT_DESKTOP]: effectiveDesktop,
                     [LAYOUT_MOBILE]: mobileLayout
                 }
             };
@@ -2274,13 +2303,15 @@
         }
 
         function getLayoutForMode(record, mode) {
+            // Always normalize first so root-level positions win
             const normalized = normalizeElementRecord(record);
-            if (!normalized.layouts) {
-                console.warn('Missing layouts for element:', normalized);
-                // Fallback to legacy structure if present or defaults
-                return normalizeLayout(record);
+            // For desktop: use normalized root values directly (they are the truth)
+            if (mode === LAYOUT_DESKTOP || !isMobileViewport()) {
+                return normalizeLayout(normalized);
             }
-            return normalized.layouts[mode] || normalized.layouts['desktop'] || normalized.layouts['mobile'] || normalizeLayout(record);
+            // For mobile: prefer mobile layout if it differs, otherwise fall back to desktop
+            const mobileLayout = normalized.layouts[LAYOUT_MOBILE];
+            return mobileLayout || normalizeLayout(normalized);
         }
 
         function toLayoutSnapshotFromElement(el) {
@@ -2731,7 +2762,7 @@
             canvas.style.cursor = 'var(--cursor-drag), grabbing';
             const p0 = getEventClientPoint(e);
             startPos = { x: p0.x, y: p0.y };
-            startElPos = { x: parseInt(el.style.left), y: parseInt(el.style.top) };
+            startElPos = { x: parseFloat(el.style.left) || 0, y: parseFloat(el.style.top) || 0 };
             const move = (evt) => {
                 if (isTouch) evt.preventDefault();
                 const p = getEventClientPoint(evt);
@@ -3403,6 +3434,7 @@
 
         const canvasId = getCanvasId();
         const localCanvasKey = `pinkBouquetCanvas:${canvasId}`;
+        const localCanvasUpdatedAtKey = `pinkBouquetCanvasUpdatedAt:${canvasId}`;
         const legacyLocalCanvasKey = 'pinkBouquetCanvas';
         const editorDbName = 'pinkBouquetEditor';
         const editorDbStore = 'canvasSnapshots';
@@ -3438,6 +3470,43 @@
             db.close();
         }
 
+        function saveCanvasToLocalStorage(state, updatedAt = Date.now()) {
+            if (!state || !Array.isArray(state.elements)) return false;
+            try {
+                localStorage.setItem('pinkBouquetCanvasId', canvasId);
+                localStorage.setItem(localCanvasKey, JSON.stringify(state.elements));
+                localStorage.setItem(localCanvasUpdatedAtKey, String(Number(updatedAt) || Date.now()));
+                return true;
+            } catch (err) {
+                console.warn('LocalStorage save failed:', err);
+                return false;
+            }
+        }
+
+        function loadCanvasFromLocalStorage() {
+            const saved = localStorage.getItem(localCanvasKey);
+            if (!saved) return null;
+            try {
+                const parsed = JSON.parse(saved);
+                let state = null;
+                if (Array.isArray(parsed)) {
+                    state = normalizeCanvasState({ elements: parsed });
+                } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.elements)) {
+                    state = normalizeCanvasState(parsed);
+                }
+                if (!state) return null;
+                let updatedAt = Number(localStorage.getItem(localCanvasUpdatedAtKey)) || 0;
+                if (!updatedAt) {
+                    updatedAt = Date.now();
+                    try { localStorage.setItem(localCanvasUpdatedAtKey, String(updatedAt)); } catch (e) { }
+                }
+                return { state, updatedAt };
+            } catch (err) {
+                console.warn('Failed to parse local canvas snapshot:', err);
+                return null;
+            }
+        }
+
         async function loadCanvasFromIndexedDb(id) {
             const db = await openEditorDb();
             const record = await new Promise((resolve, reject) => {
@@ -3449,8 +3518,27 @@
             });
             db.close();
             if (!record) return null;
-            if (record.state && typeof record.state === 'object') return normalizeCanvasState(record.state);
-            if (Array.isArray(record.elements)) return normalizeCanvasState({ elements: record.elements, footerText: record.footerText || '' });
+            let state = null;
+            if (record.state && typeof record.state === 'object') {
+                state = normalizeCanvasState(record.state);
+            } else if (Array.isArray(record.elements)) {
+                state = normalizeCanvasState({ elements: record.elements, footerText: record.footerText || '' });
+            }
+            if (!state) return null;
+            return {
+                state,
+                updatedAt: Number(record.updatedAt) || 0
+            };
+        }
+
+        function pickFreshestSnapshot(localSnapshot, indexedDbSnapshot) {
+            if (localSnapshot && indexedDbSnapshot) {
+                return localSnapshot.updatedAt >= indexedDbSnapshot.updatedAt
+                    ? { source: 'LocalStorage', snapshot: localSnapshot }
+                    : { source: 'IndexedDB', snapshot: indexedDbSnapshot };
+            }
+            if (localSnapshot) return { source: 'LocalStorage', snapshot: localSnapshot };
+            if (indexedDbSnapshot) return { source: 'IndexedDB', snapshot: indexedDbSnapshot };
             return null;
         }
 
@@ -3660,31 +3748,8 @@
             lastAppliedLayoutMode = mode;
         }
 
-        function normalizeElementRecord(r) {
-            return {
-                id: r.id || r.elementId || Date.now().toString(36) + Math.random().toString(36).substr(2),
-                type: r.type,
-                left: r.left || '0px',
-                top: r.top || '0px',
-                width: r.width,
-                height: r.height,
-                zIndex: r.zIndex,
-                transform: r.transform,
-                rotation: r.rotation,
-                contentHTML: r.contentHTML,
-                src: r.src,
-                classes: r.classes,
-                letterText: r.letterText,
-                letterBg: r.letterBg,
-                letterFontSize: r.letterFontSize,
-                letterTextAlign: r.letterTextAlign
-            };
-        }
-
         function collectCanvasState() {
             const elements = [];
-            const canvasWidth = canvas.offsetWidth || 1000;
-            const canvasHeight = canvas.offsetHeight || 800;
 
             document.querySelectorAll('.canvas-element').forEach(el => {
                 const type = el.classList.contains('el-image') ? 'image' :
@@ -3711,7 +3776,18 @@
                     content.letterTextAlign = el.dataset.letterTextAlign;
                 }
 
-                // Save exact positions (pixels) to prevent layout shifting
+                // Save exact positions (pixels) to prevent layout shifting.
+                // CRITICALLY: also write positions into layouts.desktop so that
+                // the dual-layout system never overrides our actual coordinates.
+                const currentLayout = {
+                    left: el.style.left,
+                    top: el.style.top,
+                    width: el.style.width,
+                    height: el.style.height,
+                    zIndex: el.style.zIndex,
+                    transform: el.style.transform,
+                    rotation: el.dataset.rotation
+                };
                 elements.push({
                     id: el.dataset.elementId,
                     type,
@@ -3723,6 +3799,10 @@
                     transform: el.style.transform,
                     rotation: el.dataset.rotation,
                     classes: el.className.replace(/\bselected\b/g, '').replace(/\bedge-hover\b/g, '').replace(/\s+/g, ' ').trim(),
+                    layouts: {
+                        desktop: currentLayout,
+                        mobile: currentLayout
+                    },
                     ...content
                 });
             });
@@ -3744,8 +3824,7 @@
 
             if (securityConfig) state.security = securityConfig;
 
-            try { localStorage.setItem('pinkBouquetCanvasId', canvasId); } catch (e) { }
-            localStorage.setItem(localCanvasKey, JSON.stringify(state.elements));
+            saveCanvasToLocalStorage(state);
             saveCanvasToIndexedDb(canvasId, state).catch(e => console.error(e));
 
             if (forcePublish) {
@@ -3768,6 +3847,8 @@
             updateUndoRedoButtons();
 
             if (securityConfig) state.security = securityConfig;
+            saveCanvasToLocalStorage(state);
+            saveCanvasToIndexedDb(canvasId, state).catch(e => console.error(e));
 
             if (!supabaseClient) return;
 
@@ -3825,35 +3906,32 @@
         async function restoreCanvas() {
             console.log('restoreCanvas STARTED for ID:', canvasId);
             let restoredState = null;
+            const localSnapshot = loadCanvasFromLocalStorage();
+            let indexedDbSnapshot = null;
+
             try {
-                const loaded = await loadCanvasFromIndexedDb(canvasId);
-                if (loaded) {
-                    restoredState = normalizeCanvasState(loaded);
-                    console.log('Restored from IndexedDB');
-                }
+                indexedDbSnapshot = await loadCanvasFromIndexedDb(canvasId);
             } catch (err) {
-                console.warn('IndexedDB restore failed, trying localStorage:', (err && err.message) || err);
+                console.warn('IndexedDB restore failed:', (err && err.message) || err);
+            }
+
+            const freshestSnapshot = pickFreshestSnapshot(localSnapshot, indexedDbSnapshot);
+            if (freshestSnapshot && freshestSnapshot.snapshot && freshestSnapshot.snapshot.state) {
+                restoredState = freshestSnapshot.snapshot.state;
+                console.log(`Restored from ${freshestSnapshot.source}`);
             }
 
             if (!restoredState) {
-                const saved = localStorage.getItem(localCanvasKey);
-                if (saved) {
+                const legacySaved = localStorage.getItem(legacyLocalCanvasKey);
+                if (legacySaved) {
                     try {
-                        restoredState = normalizeCanvasState({ elements: JSON.parse(saved) });
-                        console.log('Restored from LocalStorage');
+                        const legacyElements = JSON.parse(legacySaved);
+                        if (Array.isArray(legacyElements)) {
+                            restoredState = normalizeCanvasState({ elements: legacyElements });
+                            saveCanvasToLocalStorage(restoredState);
+                            console.log('Restored from legacy LocalStorage key');
+                        }
                     } catch (e) { }
-                }
-                if (!restoredState) {
-                    const legacySaved = localStorage.getItem(legacyLocalCanvasKey);
-                    if (legacySaved) {
-                        try {
-                            const legacyElements = JSON.parse(legacySaved);
-                            if (Array.isArray(legacyElements)) {
-                                restoredState = normalizeCanvasState({ elements: legacyElements });
-                                localStorage.setItem(localCanvasKey, JSON.stringify(restoredState.elements));
-                            }
-                        } catch (e) { }
-                    }
                 }
             }
 
@@ -3864,6 +3942,7 @@
                     const latest = await loadLatestCanvasFromIndexedDb();
                     if (latest && latest.state) {
                         restoredState = latest.state;
+                        console.log('Restored from latest IndexedDB canvas');
                         if (latest.id) {
                             try { localStorage.setItem('pinkBouquetCanvasId', latest.id); } catch (e) { }
                         }
@@ -3901,7 +3980,7 @@
 
             if (restoredState && Array.isArray(restoredState.elements)) {
                 console.log('Applying restored state with', restoredState.elements.length, 'elements');
-                try { localStorage.setItem(localCanvasKey, JSON.stringify(restoredState.elements)); } catch (e) { }
+                saveCanvasToLocalStorage(restoredState);
                 try { await saveCanvasToIndexedDb(canvasId, restoredState); } catch (e) { }
             }
 
