@@ -3923,12 +3923,63 @@
             updateUndoRedoButtons();
         }
 
+        // Merge two canvas states: use positions from 'primary' but recover
+        // missing contentHTML from 'recovery' (e.g. Supabase has full data,
+        // localStorage only has positions).
+        function mergeCanvasStates(primary, recovery) {
+            if (!primary || !recovery) return primary || recovery;
+            if (!Array.isArray(primary.elements) || !Array.isArray(recovery.elements)) return primary;
+
+            // Build lookup of recovery elements by id
+            const recoveryById = {};
+            recovery.elements.forEach(el => {
+                if (el.id) recoveryById[el.id] = el;
+            });
+
+            // Also build by index as fallback
+            const recoveryByIdx = recovery.elements;
+
+            const merged = primary.elements.map((el, idx) => {
+                const recoveryEl = (el.id && recoveryById[el.id]) || recoveryByIdx[idx];
+                if (!recoveryEl) return el;
+
+                const result = { ...el };
+                // Recover contentHTML if primary has empty but recovery has data
+                if ((!result.contentHTML || result.contentHTML.trim() === '') && recoveryEl.contentHTML && recoveryEl.contentHTML.trim() !== '') {
+                    result.contentHTML = recoveryEl.contentHTML;
+                    console.log(`  Recovered contentHTML for element ${el.id || idx} (type: ${el.type})`);
+                }
+                // Recover letter data
+                if (!result.letterText && recoveryEl.letterText) result.letterText = recoveryEl.letterText;
+                if (!result.letterBg && recoveryEl.letterBg) result.letterBg = recoveryEl.letterBg;
+
+                return result;
+            });
+
+            // Also add any elements that exist in recovery but not in primary
+            // (elements that were completely lost from localStorage)
+            if (recovery.elements.length > primary.elements.length) {
+                const primaryIds = new Set(primary.elements.map(e => e.id).filter(Boolean));
+                recovery.elements.forEach(el => {
+                    if (el.id && !primaryIds.has(el.id)) {
+                        merged.push(el);
+                        console.log(`  Recovered missing element ${el.id} (type: ${el.type})`);
+                    }
+                });
+            }
+
+            return {
+                ...primary,
+                elements: merged
+            };
+        }
+
         async function restoreCanvas() {
             console.log('restoreCanvas STARTED for ID:', canvasId);
             let restoredState = null;
+            let restoredFrom = '';
 
-            // ALWAYS prefer IndexedDB - it's the full-data store (has images/video base64 content).
-            // localStorage only has positions/metadata (contentHTML stripped to avoid quota issues).
+            // Step 1: Try IndexedDB first - it's the full-data store
             let indexedDbSnapshot = null;
             try {
                 indexedDbSnapshot = await loadCanvasFromIndexedDb(canvasId);
@@ -3938,16 +3989,58 @@
 
             if (indexedDbSnapshot && indexedDbSnapshot.state) {
                 restoredState = indexedDbSnapshot.state;
+                restoredFrom = 'IndexedDB';
                 console.log('Restored from IndexedDB (primary store)');
-            } else {
-                // IndexedDB had nothing - fall back to localStorage (positions only, no images)
-                const localSnapshot = loadCanvasFromLocalStorage();
-                if (localSnapshot && localSnapshot.state) {
-                    restoredState = localSnapshot.state;
-                    console.log('Restored from localStorage (fallback - images may be missing)');
+            }
+
+            // Step 2: Try Supabase BEFORE localStorage (Supabase has full data, localStorage is stripped)
+            let supabaseState = null;
+            if (supabaseClient) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('canvases')
+                        .select('canvas_data')
+                        .eq('id', canvasId)
+                        .single();
+
+                    if (error) {
+                        console.warn('Supabase fetch error:', error.message);
+                    } else if (data && data.canvas_data) {
+                        supabaseState = normalizeCanvasState(data.canvas_data);
+                        console.log('Supabase data loaded with', supabaseState.elements.length, 'elements');
+                    }
+                } catch (err) {
+                    console.warn('Supabase exception:', err);
                 }
             }
 
+            // If we have IndexedDB state, merge with Supabase to recover any lost content
+            if (restoredState && supabaseState) {
+                console.log('Merging IndexedDB state with Supabase to recover any missing content...');
+                restoredState = mergeCanvasStates(restoredState, supabaseState);
+            } else if (!restoredState && supabaseState) {
+                restoredState = supabaseState;
+                restoredFrom = 'Supabase';
+                console.log('Restored from Supabase (IndexedDB was empty)');
+            }
+
+            // Step 3: Fall back to localStorage only if nothing else worked
+            if (!restoredState) {
+                const localSnapshot = loadCanvasFromLocalStorage();
+                if (localSnapshot && localSnapshot.state) {
+                    restoredState = localSnapshot.state;
+                    restoredFrom = 'localStorage';
+                    console.log('Restored from localStorage (fallback - images may be missing)');
+
+                    // Try to merge with Supabase to recover stripped contentHTML
+                    if (supabaseState) {
+                        console.log('Merging localStorage with Supabase to recover content...');
+                        restoredState = mergeCanvasStates(restoredState, supabaseState);
+                    }
+                }
+            }
+
+            // Step 4: Legacy localStorage key
             if (!restoredState) {
                 const legacySaved = localStorage.getItem(legacyLocalCanvasKey);
                 if (legacySaved) {
@@ -3955,20 +4048,20 @@
                         const legacyElements = JSON.parse(legacySaved);
                         if (Array.isArray(legacyElements)) {
                             restoredState = normalizeCanvasState({ elements: legacyElements });
-                            saveCanvasToLocalStorage(restoredState);
+                            restoredFrom = 'legacy';
                             console.log('Restored from legacy LocalStorage key');
                         }
                     } catch (e) { }
                 }
             }
 
-            // If there's no explicit URL id and current key has no data,
-            // fall back to the most recently edited local canvas snapshot.
+            // Step 5: Latest IndexedDB canvas if no URL id
             if (!restoredState && !getCanvasIdFromUrl()) {
                 try {
                     const latest = await loadLatestCanvasFromIndexedDb();
                     if (latest && latest.state) {
                         restoredState = latest.state;
+                        restoredFrom = 'latestIDB';
                         console.log('Restored from latest IndexedDB canvas');
                         if (latest.id) {
                             try { localStorage.setItem('pinkBouquetCanvasId', latest.id); } catch (e) { }
@@ -3979,34 +4072,9 @@
                 }
             }
 
-            // Also try Supabase if needed (omitted for brevity unless essential, assuming local/IDB is primary)
-            // Added supabase restore logic just in case:
-            if (!restoredState && supabaseClient) {
-                console.log('Attempting Supabase restore...');
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('canvases')
-                        .select('canvas_data')
-                        .eq('id', canvasId)
-                        .single();
-
-                    if (error) console.error('Supabase fetch error:', error);
-
-                    if (data && data.canvas_data) {
-                        restoredState = normalizeCanvasState(data.canvas_data);
-                        console.log('Restored from Supabase!');
-                    } else {
-                        console.log('No data found in Supabase for this ID.');
-                    }
-                } catch (err) {
-                    console.error('Supabase exception:', err);
-                }
-            } else if (!supabaseClient) {
-                console.warn('Skipping Supabase restore: Client not initialized');
-            }
-
             if (restoredState && Array.isArray(restoredState.elements)) {
-                console.log('Applying restored state with', restoredState.elements.length, 'elements');
+                console.log('Applying restored state with', restoredState.elements.length, 'elements from', restoredFrom);
+                // Save the merged/recovered state back to local stores
                 saveCanvasToLocalStorage(restoredState);
                 try { await saveCanvasToIndexedDb(canvasId, restoredState); } catch (e) { }
             }
