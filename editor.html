@@ -1791,11 +1791,12 @@
             object-position: center top;
         }
 
-        /* Content layer — 2-column grid */
+        /* Content layer — smart adaptive grid */
         #contentLayer.mobile-grid {
             position: relative !important;
             display: grid !important;
             grid-template-columns: 1fr 1fr;
+            grid-auto-flow: row dense;
             gap: 12px;
             padding: 80px 16px 120px;
             transform: none !important;
@@ -1814,9 +1815,11 @@
             transform: none !important;
         }
 
-        /* Type-specific heights only — no appearance changes */
+        /* Music only: full-width row, no horizontal scroll */
         #contentLayer.mobile-grid .el-music {
-            height: 100px !important;
+            grid-column: 1 / -1;
+            width: 100% !important;
+            height: 110px !important;
             overflow: hidden;
         }
 
@@ -1836,7 +1839,7 @@
             object-fit: cover !important;
         }
 
-        /* Music media fills its cell */
+        /* Music embed fills its full-width row */
         #contentLayer.mobile-grid .el-music iframe,
         #contentLayer.mobile-grid .el-music audio {
             width: 100% !important;
@@ -2574,7 +2577,7 @@
                 const origH = parseFloat(el.style.height) || 200;
 
                 if (el.classList.contains('el-music')) {
-                    el.style.setProperty('height', '100px', 'important');
+                    el.style.setProperty('height', '110px', 'important');
                 } else if (el.classList.contains('el-sticker')) {
                     el.style.setProperty('height', '90px', 'important');
                 } else if (el.classList.contains('el-letter')) {

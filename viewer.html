@@ -757,11 +757,12 @@
             object-position: center top;
         }
 
-        /* The content layer becomes a 2-column grid */
+        /* The content layer — smart adaptive grid */
         #contentLayer.mobile-grid {
             position: relative !important;
             display: grid !important;
             grid-template-columns: 1fr 1fr;
+            grid-auto-flow: row dense;
             gap: 12px;
             padding: 16px;
             transform: none !important;
@@ -780,9 +781,11 @@
             transform: none !important;
         }
 
-        /* Type-specific heights only — no appearance changes */
+        /* Music only: full-width row, centered, no horizontal scroll */
         #contentLayer.mobile-grid .el-music {
-            height: 100px !important;
+            grid-column: 1 / -1;
+            width: 100% !important;
+            height: 110px !important;
             overflow: hidden;
         }
 
@@ -802,7 +805,7 @@
             object-fit: cover !important;
         }
 
-        /* Music media fills its cell */
+        /* Music embed fills its full-width row */
         #contentLayer.mobile-grid .el-music iframe,
         #contentLayer.mobile-grid .el-music audio {
             width: 100% !important;
@@ -1247,7 +1250,7 @@
 
                 if (el.classList.contains('el-music')) {
                     // Music: fixed height; overflow:hidden handled by CSS
-                    el.style.setProperty('height', '100px', 'important');
+                    el.style.setProperty('height', '110px', 'important');
                 } else if (el.classList.contains('el-sticker')) {
                     el.style.setProperty('height', '90px', 'important');
                 } else if (el.classList.contains('el-letter')) {
