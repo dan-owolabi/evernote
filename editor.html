@@ -2252,29 +2252,96 @@
             }
         }
 
+        /* Compress a single base64 image to reduce payload size */
+        function compressBase64Image(dataUri, maxDim, quality) {
+            maxDim = maxDim || 1200; quality = quality || 0.7;
+            return new Promise(function (resolve) {
+                var img = new Image();
+                img.onload = function () {
+                    var w = img.naturalWidth, h = img.naturalHeight;
+                    if (w > maxDim || h > maxDim) {
+                        if (w >= h) { h = Math.round(h * maxDim / w); w = maxDim; }
+                        else { w = Math.round(w * maxDim / h); h = maxDim; }
+                    }
+                    var c = document.createElement('canvas');
+                    c.width = w; c.height = h;
+                    c.getContext('2d').drawImage(img, 0, 0, w, h);
+                    resolve(c.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = function () { resolve(dataUri); };
+                img.src = dataUri;
+            });
+        }
+
+        /* Compress all base64 images in elements to keep Supabase payload small */
+        async function compressElementsForPublish(elements) {
+            var out = [];
+            for (var i = 0; i < elements.length; i++) {
+                var el = elements[i];
+                if (!el.contentHTML || (el.type !== 'image' && el.type !== 'sticker')) {
+                    out.push(el); continue;
+                }
+                var html = el.contentHTML;
+                var re = /data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/g;
+                var matches = html.match(re);
+                if (matches) {
+                    for (var j = 0; j < matches.length; j++) {
+                        if (matches[j].length > 50000) { // only compress if > ~37KB
+                            var compressed = await compressBase64Image(matches[j]);
+                            html = html.split(matches[j]).join(compressed);
+                        }
+                    }
+                }
+                out.push(Object.assign({}, el, { contentHTML: html }));
+            }
+            return out;
+        }
+
         async function publishCanvasWithName(publishName, securityConfig) {
             if (!supabaseClient) throw new Error('Publishing is unavailable right now.');
 
+            // Quick connectivity check
+            try {
+                var ping = await withTimeout(
+                    supabaseClient.from('canvases').select('id', { count: 'exact', head: true }).limit(0),
+                    8000, 'Cannot reach server'
+                );
+                if (ping.error && /fetch|network|CORS/i.test(ping.error.message || '')) {
+                    throw new Error('Cannot connect to server. Check your internet connection and try again.');
+                }
+            } catch (pingErr) {
+                if (/Cannot connect|Cannot reach|internet/i.test(pingErr.message || '')) throw pingErr;
+                // other errors (e.g. RLS) are fine — server is reachable
+            }
+
             const state = collectCanvasState();
-            const { elements, footerText, bgColor } = state;
+            const { footerText, bgColor } = state;
+            const elements = await compressElementsForPublish(state.elements);
             const resolvedName = await resolveUniquePublishName(publishName);
             const dataToSave = {
                 elements,
                 footerText,
                 bgColor,
-                name: resolvedName, // Save name INSIDE the JSON blob since there's no column for it
+                name: resolvedName,
                 ...(securityConfig ? { security: securityConfig } : {})
             };
+
+            // Check payload size before sending
+            var payloadJson = JSON.stringify(dataToSave);
+            var sizeMB = payloadJson.length / (1024 * 1024);
+            console.log('Publish payload size:', sizeMB.toFixed(2) + ' MB');
+            if (sizeMB > 4.5) {
+                throw new Error('Canvas is too large to publish (' + sizeMB.toFixed(1) + ' MB). Try removing some images or using smaller photos.');
+            }
 
             const writeQuery = supabaseClient
                 .from('canvases')
                 .upsert({
                     id: canvasId,
-                    // name column doesn't exist, so we don't save it here
                     canvas_data: dataToSave,
                     updated_at: new Date().toISOString()
                 }, { onConflict: 'id' });
-            const { error } = await withTimeout(writeQuery, 30000, 'Publish timed out');
+            const { error } = await withTimeout(writeQuery, 30000, 'Publish timed out — please try again.');
             if (error) throw new Error(error.message || 'Publish failed.');
             return resolvedName;
         }
@@ -4161,11 +4228,15 @@
             if (!supabaseClient) return;
 
             try {
+                // Compress images to keep Supabase payload small
+                var compressedState = Object.assign({}, state, {
+                    elements: await compressElementsForPublish(state.elements || [])
+                });
                 const { error } = await supabaseClient
                     .from('canvases')
                     .upsert({
                         id: canvasId,
-                        canvas_data: state,
+                        canvas_data: compressedState,
                         updated_at: new Date().toISOString()
                     }, { onConflict: 'id' });
 
