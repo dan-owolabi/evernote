@@ -1749,6 +1749,118 @@
                 max-height: 100dvh;
             }
         }
+
+        /* ═══ MOBILE GRID MODE (editor) ═══
+           toggled via JS — never affects desktop */
+
+        #workspace.mobile-grid-active {
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y !important;
+        }
+
+        #canvas.mobile-grid-active {
+            height: auto !important;
+            max-height: none !important;
+            min-height: 100vh;
+            overflow: visible !important;
+            background: transparent;
+        }
+
+        /* Bouquet pinned as full-screen fixed background */
+        #canvas.mobile-grid-active .fixed-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        #canvas.mobile-grid-active .fixed-backdrop img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+        }
+
+        /* Content layer — 2-column grid */
+        #contentLayer.mobile-grid {
+            position: relative !important;
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding: 80px 16px 120px;
+            transform: none !important;
+            width: 100%;
+            height: auto !important;
+            z-index: 8;
+        }
+
+        /* All canvas elements become grid items */
+        #contentLayer.mobile-grid .canvas-element {
+            position: relative !important;
+            left: auto !important;
+            top: auto !important;
+            width: 100% !important;
+            height: 160px !important;
+            transform: none !important;
+            border-radius: 14px;
+            overflow: visible;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        /* Type-specific heights */
+        #contentLayer.mobile-grid .el-music {
+            height: 90px !important;
+        }
+
+        #contentLayer.mobile-grid .el-sticker {
+            height: 90px !important;
+            font-size: 48px;
+        }
+
+        #contentLayer.mobile-grid .el-letter {
+            height: 140px !important;
+            background: rgba(255, 255, 255, 0.15) !important;
+        }
+
+        /* Images/videos fill their cell */
+        #contentLayer.mobile-grid .el-image .el-content,
+        #contentLayer.mobile-grid .el-video .el-content {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            border-radius: 14px;
+        }
+
+        /* Envelope fills letter cell */
+        #contentLayer.mobile-grid .envelope-view {
+            border-radius: 14px;
+        }
+
+        /* Music media fills its cell */
+        #contentLayer.mobile-grid .el-music iframe,
+        #contentLayer.mobile-grid .el-music audio {
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 14px;
+        }
+
+        /* Keep resize/rotate visible for editing — position them relative to cell */
+        #contentLayer.mobile-grid .resize-handle {
+            right: 4px;
+            bottom: 4px;
+        }
+
+        #contentLayer.mobile-grid .rotate-handle {
+            top: -24px;
+            right: 50%;
+        }
     </style>
 
 
@@ -2381,6 +2493,8 @@
 
         function applyCanvasTransform() {
             if (!contentLayer) return;
+            // Don't apply scale transform when mobile grid is active
+            if (contentLayer.classList.contains('mobile-grid')) return;
             contentLayer.style.transformOrigin = '0 0';
             contentLayer.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
             updateZoomLabel();
@@ -2437,31 +2551,22 @@
         }
 
         function fitCanvasToViewport(force = false) {
+            const canvasEl = document.getElementById('canvas');
+
             if (!isMobileViewport()) {
+                // Desktop: remove grid classes, restore normal viewport
+                workspace.classList.remove('mobile-grid-active');
+                canvasEl.classList.remove('mobile-grid-active');
+                contentLayer.classList.remove('mobile-grid');
                 resetCanvasViewport();
                 return;
             }
 
-            const bounds = getCanvasElementsBounds();
-            if (!bounds) {
-                resetCanvasViewport();
-                return;
-            }
-
-            const workspaceRect = workspace.getBoundingClientRect();
-            const availableW = Math.max(1, workspaceRect.width);
-            const availableH = Math.max(1, workspaceRect.height);
-
-            // Scale to fit all content, never upscale
-            currentZoom = Math.min(availableW / bounds.width, availableH / bounds.height, 1);
-
-            // Center the scaled content cleanly
-            const scaledW = bounds.width * currentZoom;
-            const scaledH = bounds.height * currentZoom;
-            panX = Math.round((availableW - scaledW) / 2 - bounds.minX * currentZoom);
-            panY = Math.round((availableH - scaledH) / 2 - bounds.minY * currentZoom);
-
-            applyCanvasTransform();
+            // Mobile: activate grid layout
+            workspace.classList.add('mobile-grid-active');
+            canvasEl.classList.add('mobile-grid-active');
+            contentLayer.classList.add('mobile-grid');
+            contentLayer.style.transform = 'none';
         }
 
         let fitViewportTimeout = null;
