@@ -1712,19 +1712,25 @@
             }
 
             .letter-editor-fullscreen {
-                width: 95%;
+                width: 100vw;
                 min-width: unset;
-                height: 85vh;
-                padding: 24px 16px;
+                height: 100dvh;
+                border-radius: 0;
+                padding: 16px 12px 24px;
+                justify-content: flex-start;
             }
 
             .letter-modal-card {
                 width: 100%;
-                padding: 24px 16px;
+                flex: 1;
+                padding: 20px 16px;
+                border-radius: 16px;
+                overflow-y: auto;
             }
 
             .letter-textarea {
-                font-size: 16px;
+                font-size: 18px;
+                min-height: 60vh;
             }
 
             #publishModalContent {
