@@ -688,36 +688,6 @@
            MOBILE RESPONSIVENESS
            ═══════════════════════════════ */
         @media (max-width: 768px) {
-            .viewer-workspace {
-                overflow: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .viewer-canvas {
-                width: 100vw;
-                min-height: 100vh;
-                min-height: 100dvh;
-            }
-
-            .viewer-content-layer {
-                transform-origin: 0 0;
-            }
-
-            .fixed-backdrop img {
-                width: auto;
-                height: 140%;
-                object-fit: cover;
-                object-position: center top;
-                transform: translate(-8%, -10%);
-            }
-
-            .fixed-backdrop {
-                top: 0;
-                left: 0;
-                transform: none;
-                align-items: flex-start;
-            }
-
             #footerText {
                 font-size: clamp(24px, 7vw, 40px);
                 left: 16px;
@@ -749,6 +719,114 @@
                 max-width: 340px;
                 padding: 24px 20px;
             }
+        }
+
+        /* ═══════════════════════════════
+           MOBILE GRID MODE
+           (toggled via JS — never affects desktop)
+           ═══════════════════════════════ */
+
+        /* Make workspace + canvas scrollable when grid mode is on */
+        #workspace.mobile-grid-active {
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #canvas.mobile-grid-active {
+            height: auto;
+            min-height: 100vh;
+            overflow: visible;
+            background: transparent;
+        }
+
+        /* Bouquet stays behind the grid as a fixed background */
+        #canvas.mobile-grid-active .fixed-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        #canvas.mobile-grid-active .fixed-backdrop img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+        }
+
+        /* The content layer becomes a 2-column grid */
+        #contentLayer.mobile-grid {
+            position: relative !important;
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding: 16px;
+            transform: none !important;
+            width: 100%;
+            height: auto !important;
+            z-index: 8;
+        }
+
+        /* All elements become grid items */
+        #contentLayer.mobile-grid .canvas-element {
+            position: relative !important;
+            left: auto !important;
+            top: auto !important;
+            width: 100% !important;
+            height: 160px !important;
+            transform: none !important;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+
+        /* Type-specific heights */
+        #contentLayer.mobile-grid .el-music {
+            height: 90px !important;
+        }
+
+        #contentLayer.mobile-grid .el-sticker {
+            height: 90px !important;
+            font-size: 48px;
+        }
+
+        #contentLayer.mobile-grid .el-letter {
+            height: 140px !important;
+            background: rgba(255, 255, 255, 0.15) !important;
+        }
+
+        /* Images and videos fill their cell */
+        #contentLayer.mobile-grid .el-image .el-content,
+        #contentLayer.mobile-grid .el-video .el-content {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            border-radius: 14px;
+        }
+
+        /* Envelope fills the letter cell */
+        #contentLayer.mobile-grid .envelope-view {
+            border-radius: 14px;
+        }
+
+        /* Music iframes and audio fill their cell */
+        #contentLayer.mobile-grid .el-music iframe,
+        #contentLayer.mobile-grid .el-music audio {
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 14px;
+        }
+
+        /* Hide resize/rotate handles in grid mode — not needed */
+        #contentLayer.mobile-grid .resize-handle,
+        #contentLayer.mobile-grid .rotate-handle {
+            display: none !important;
         }
     </style>
 </head>
@@ -1148,60 +1226,24 @@
         }
 
         function fitViewerToViewport() {
+            const workspace = document.getElementById('workspace');
+            const canvasEl = document.getElementById('canvas');
+
             if (!isMobileViewport()) {
+                // Desktop: remove grid classes, reset any transform
+                workspace.classList.remove('mobile-grid-active');
+                canvasEl.classList.remove('mobile-grid-active');
+                contentLayer.classList.remove('mobile-grid');
                 contentLayer.style.transformOrigin = '0 0';
                 contentLayer.style.transform = 'none';
                 return;
             }
 
-            const workspace = document.getElementById('workspace');
-            const nodes = Array.from(contentLayer.querySelectorAll('.canvas-element'));
-            if (nodes.length === 0) return;
-
-            // Start with extreme values so the first element sets them properly
-            let minX = Infinity, minY = Infinity;
-            let maxX = -Infinity, maxY = -Infinity;
-
-            nodes.forEach(el => {
-                const x = parseFloat(el.style.left) || 0;
-                const y = parseFloat(el.style.top) || 0;
-                const w = el.offsetWidth || parseFloat(el.style.width) || 100;
-                const h = el.offsetHeight || parseFloat(el.style.height) || 100;
-
-                // Only skip truly extreme / corrupted values
-                if (x < -5000 || x > 20000 || y < -5000 || y > 20000) return;
-
-                minX = Math.min(minX, x);
-                minY = Math.min(minY, y);
-                maxX = Math.max(maxX, x + w);
-                maxY = Math.max(maxY, y + h);
-            });
-
-            // Fallback if nothing valid found
-            if (!isFinite(minX)) return;
-
-            // Add small padding around content
-            const PAD = 20;
-            minX -= PAD; minY -= PAD;
-            maxX += PAD; maxY += PAD;
-
-            const contentW = Math.max(1, maxX - minX);
-            const contentH = Math.max(1, maxY - minY);
-
-            const availW = Math.max(1, workspace.clientWidth || window.innerWidth);
-            const availH = Math.max(1, workspace.clientHeight || window.innerHeight);
-
-            // Scale to fit all content within viewport (never scale up, only down)
-            const zoom = Math.min(availW / contentW, availH / contentH, 1);
-
-            // Center the scaled content in the viewport
-            const scaledW = contentW * zoom;
-            const scaledH = contentH * zoom;
-            const panX = (availW - scaledW) / 2 - minX * zoom;
-            const panY = (availH - scaledH) / 2 - minY * zoom;
-
-            contentLayer.style.transformOrigin = '0 0';
-            contentLayer.style.transform = `translate(${Math.round(panX)}px, ${Math.round(panY)}px) scale(${zoom})`;
+            // Mobile: activate grid layout
+            workspace.classList.add('mobile-grid-active');
+            canvasEl.classList.add('mobile-grid-active');
+            contentLayer.classList.add('mobile-grid');
+            contentLayer.style.transform = 'none'; // no scaling needed
         }
 
         // Call fitViewerToViewport after a short delay to let elements render
