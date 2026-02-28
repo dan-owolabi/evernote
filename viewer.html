@@ -1137,7 +1137,90 @@
                     console.warn('Failed to render element:', data, err);
                 }
             });
+
+            // After all elements rendered, fit to mobile viewport if needed
+            scheduleViewerFit();
         }
+
+        // ═══ MOBILE VIEWPORT FIT ═══
+        function isMobileViewport() {
+            return window.matchMedia('(max-width: 768px)').matches;
+        }
+
+        function fitViewerToViewport() {
+            if (!isMobileViewport()) {
+                // Desktop: reset any transform
+                contentLayer.style.transformOrigin = '0 0';
+                contentLayer.style.transform = 'none';
+                return;
+            }
+
+            const workspace = document.getElementById('workspace');
+            const nodes = Array.from(contentLayer.querySelectorAll('.canvas-element'));
+            if (nodes.length === 0) return;
+
+            // Calculate bounding box of all elements
+            const baseWidth = canvas.clientWidth || workspace.clientWidth || window.innerWidth;
+            const baseHeight = canvas.clientHeight || workspace.clientHeight || window.innerHeight;
+
+            let minX = 0, minY = 0;
+            let maxX = Math.max(1, baseWidth);
+            let maxY = Math.max(1, baseHeight);
+
+            nodes.forEach(el => {
+                const x = parseFloat(el.style.left) || 0;
+                const y = parseFloat(el.style.top) || 0;
+                const w = el.offsetWidth || parseFloat(el.style.width) || 0;
+                const h = el.offsetHeight || parseFloat(el.style.height) || 0;
+
+                // Include near off-canvas elements, reject extreme corrupted coords
+                const x1 = Math.max(-baseWidth, Math.min(baseWidth * 2, x));
+                const y1 = Math.max(-baseHeight, Math.min(baseHeight * 2, y));
+                const x2 = Math.max(-baseWidth, Math.min(baseWidth * 2, x + w));
+                const y2 = Math.max(-baseHeight, Math.min(baseHeight * 2, y + h));
+
+                if (x2 > x1 && y2 > y1) {
+                    minX = Math.min(minX, x1);
+                    minY = Math.min(minY, y1);
+                    maxX = Math.max(maxX, x2);
+                    maxY = Math.max(maxY, y2);
+                }
+            });
+
+            const boundsW = Math.max(1, maxX - minX);
+            const boundsH = Math.max(1, maxY - minY);
+
+            const availW = Math.max(1, workspace.clientWidth || window.innerWidth);
+            const availH = Math.max(1, workspace.clientHeight || window.innerHeight);
+
+            const scaleX = availW / boundsW;
+            const scaleY = availH / boundsH;
+            const zoom = Math.min(Math.max(Math.min(scaleX, scaleY, 1), 0.15), 1);
+
+            let panX = (availW - boundsW * zoom) / 2 - minX * zoom;
+            let panY = (availH - boundsH * zoom) / 2 - minY * zoom;
+
+            // Clamp so content doesn't overflow viewport edges
+            const projL = minX * zoom + panX;
+            const projR = maxX * zoom + panX;
+            const projT = minY * zoom + panY;
+            const projB = maxY * zoom + panY;
+            if (projR > availW) panX -= (projR - availW);
+            if (projL < 0) panX -= projL;
+            if (projB > availH) panY -= (projB - availH);
+            if (projT < 0) panY -= projT;
+
+            contentLayer.style.transformOrigin = '0 0';
+            contentLayer.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+        }
+
+        // Call fitViewerToViewport after a short delay to let elements render
+        function scheduleViewerFit() {
+            setTimeout(fitViewerToViewport, 100);
+        }
+
+        window.addEventListener('resize', scheduleViewerFit);
+        window.addEventListener('orientationchange', scheduleViewerFit);
 
         // ═══ LETTER VIEWER - exact same as editor ═══
         function escapeHtml(value) {
