@@ -795,12 +795,17 @@
         .el-letter {
             cursor: var(--cursor-drag);
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: transparent !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            overflow: visible;
         }
 
         .envelope-view {
             width: 100%;
             height: 100%;
-            background: url('envelope.png') center/cover;
+            background: url('envelope.png') center/cover no-repeat;
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
@@ -3213,7 +3218,12 @@
 
         function closeModal() {
             editingLetterEl = null;
-            document.getElementById('modalOverlay').style.display = 'none';
+            const overlay = document.getElementById('modalOverlay');
+            overlay.style.display = 'none';
+            // Clear the content so the .letter-editor-fullscreen dark shape
+            // doesn't linger in the DOM and flash during saves
+            const content = document.getElementById('modalContent');
+            if (content) content.innerHTML = '';
         }
 
         function confirmLetter() {
@@ -3235,10 +3245,12 @@
                 if (!targetLetter.querySelector('.envelope-view')) {
                     targetLetter.insertAdjacentHTML('beforeend', `<div class="envelope-view"></div>`);
                 }
-                saveCanvas(true);
-                showStatusToast('Letter saved');
+                // Close modal FIRST to prevent the black shape flash,
+                // then save asynchronously
                 closeModal();
                 addMenu.classList.remove('active');
+                showStatusToast('Letter saved');
+                saveCanvas(true);
                 return;
             }
             const el = createNewElement('letter', 300, 200, 320, 240);
@@ -3247,10 +3259,11 @@
             el.dataset.letterFontSize = fontSize;
             el.dataset.letterTextAlign = textAlign;
             el.insertAdjacentHTML('beforeend', `<div class="envelope-view"></div>`);
-            saveCanvas(true);
-            showStatusToast('Letter saved');
+            // Close modal FIRST to prevent the black shape flash
             closeModal();
             addMenu.classList.remove('active');
+            showStatusToast('Letter saved');
+            saveCanvas(true);
         }
 
         function confirmGeneric(type) {

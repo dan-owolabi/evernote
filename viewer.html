@@ -127,13 +127,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            background: transparent !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            overflow: visible;
         }
 
         /* Envelope visual for letter element */
         .envelope-view {
             width: 100%;
             height: 100%;
-            background: url('envelope.png') center/cover;
+            background: url('envelope.png') center/cover no-repeat;
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             cursor: pointer;
@@ -677,6 +682,73 @@
             pointer-events: none;
             max-width: calc(100vw - 32px);
             display: none;
+        }
+
+        /* ═══════════════════════════════
+           MOBILE RESPONSIVENESS
+           ═══════════════════════════════ */
+        @media (max-width: 768px) {
+            .viewer-workspace {
+                overflow: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .viewer-canvas {
+                width: 100vw;
+                min-height: 100vh;
+                min-height: 100dvh;
+            }
+
+            .viewer-content-layer {
+                transform-origin: 0 0;
+            }
+
+            .fixed-backdrop img {
+                width: auto;
+                height: 140%;
+                object-fit: cover;
+                object-position: center top;
+                transform: translate(-8%, -10%);
+            }
+
+            .fixed-backdrop {
+                top: 0;
+                left: 0;
+                transform: none;
+                align-items: flex-start;
+            }
+
+            #footerText {
+                font-size: clamp(24px, 7vw, 40px);
+                left: 16px;
+                bottom: 16px;
+            }
+
+            /* Letter viewer modal on mobile */
+            .letter-viewer-bg {
+                width: 92vw;
+                max-width: none;
+                height: 80vh;
+                padding: 32px 20px;
+            }
+
+            /* Media viewer on mobile */
+            .media-viewer-card {
+                width: 96vw;
+            }
+
+            .media-viewer-body img,
+            .media-viewer-body video,
+            .media-viewer-body iframe {
+                max-height: 70vh;
+            }
+
+            /* Lock screen on mobile */
+            .lock-card {
+                width: 85vw;
+                max-width: 340px;
+                padding: 24px 20px;
+            }
         }
     </style>
 </head>
