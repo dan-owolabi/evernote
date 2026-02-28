@@ -2601,6 +2601,11 @@
             contentLayer.appendChild(leftCol);
             contentLayer.appendChild(rightCol);
 
+            // If there are 2+ music tracks, separate: first at top, last at bottom
+            if (musicEls.length >= 2) {
+                contentLayer.appendChild(musicEls[musicEls.length - 1]);
+            }
+
             const gap = 12;
             const padding = 32;
             const cellW = Math.max(80, Math.floor((window.innerWidth - padding - gap) / 2));
