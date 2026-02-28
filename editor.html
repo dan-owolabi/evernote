@@ -2400,38 +2400,31 @@
         function getCanvasElementsBounds() {
             const host = contentLayer || canvas;
             const nodes = Array.from(host.querySelectorAll('.canvas-element'));
-            const baseWidth = canvas.clientWidth || workspace.clientWidth || window.innerWidth;
-            const baseHeight = canvas.clientHeight || workspace.clientHeight || window.innerHeight;
-            if (nodes.length === 0 && (!baseWidth || !baseHeight)) return null;
+            if (nodes.length === 0) return null;
 
-            // Always include the canvas frame itself so mobile never collapses into a tiny cluster.
-            let minX = 0;
-            let minY = 0;
-            let maxX = Math.max(1, baseWidth);
-            let maxY = Math.max(1, baseHeight);
+            // Start from actual element positions, not 0,0
+            let minX = Infinity, minY = Infinity;
+            let maxX = -Infinity, maxY = -Infinity;
 
             nodes.forEach((el) => {
                 const x = parseFloat(el.style.left) || 0;
                 const y = parseFloat(el.style.top) || 0;
-                const w = el.offsetWidth || parseFloat(el.style.width) || 0;
-                const h = el.offsetHeight || parseFloat(el.style.height) || 0;
-                // Include nearby off-canvas elements so fit can pull them back into view,
-                // while still rejecting extreme corrupted coordinates.
-                const minXLimit = -baseWidth;
-                const maxXLimit = baseWidth * 2;
-                const minYLimit = -baseHeight;
-                const maxYLimit = baseHeight * 2;
-                const x1 = Math.max(minXLimit, Math.min(maxXLimit, x));
-                const y1 = Math.max(minYLimit, Math.min(maxYLimit, y));
-                const x2 = Math.max(minXLimit, Math.min(maxXLimit, x + w));
-                const y2 = Math.max(minYLimit, Math.min(maxYLimit, y + h));
-                if (x2 > x1 && y2 > y1) {
-                    minX = Math.min(minX, x1);
-                    minY = Math.min(minY, y1);
-                    maxX = Math.max(maxX, x2);
-                    maxY = Math.max(maxY, y2);
-                }
+                const w = el.offsetWidth || parseFloat(el.style.width) || 100;
+                const h = el.offsetHeight || parseFloat(el.style.height) || 100;
+                // Skip corrupted coordinates
+                if (x < -5000 || x > 20000 || y < -5000 || y > 20000) return;
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x + w);
+                maxY = Math.max(maxY, y + h);
             });
+
+            if (!isFinite(minX)) return null;
+
+            // Add padding
+            const PAD = 20;
+            minX -= PAD; minY -= PAD;
+            maxX += PAD; maxY += PAD;
 
             return {
                 minX,
@@ -2458,26 +2451,15 @@
             const workspaceRect = workspace.getBoundingClientRect();
             const availableW = Math.max(1, workspaceRect.width);
             const availableH = Math.max(1, workspaceRect.height);
-            const scaleX = availableW / Math.max(1, bounds.width);
-            const scaleY = availableH / Math.max(1, bounds.height);
-            currentZoom = Math.min(Math.max(Math.min(scaleX, scaleY, 1), 0.15), 1);
-            panX = (availableW - bounds.width * currentZoom) / 2 - bounds.minX * currentZoom;
-            panY = (availableH - bounds.height * currentZoom) / 2 - bounds.minY * currentZoom;
 
-            // Clamp horizontal/vertical overflow so off-right/off-bottom content is pushed back in-frame.
-            const projectedLeft = bounds.minX * currentZoom + panX;
-            const projectedRight = bounds.maxX * currentZoom + panX;
-            const projectedTop = bounds.minY * currentZoom + panY;
-            const projectedBottom = bounds.maxY * currentZoom + panY;
+            // Scale to fit all content, never upscale
+            currentZoom = Math.min(availableW / bounds.width, availableH / bounds.height, 1);
 
-            if (projectedRight > availableW) panX -= (projectedRight - availableW);
-            if (projectedLeft < 0) panX -= projectedLeft;
-            if (projectedBottom > availableH) panY -= (projectedBottom - availableH);
-            if (projectedTop < 0) panY -= projectedTop;
-
-            // User-requested bias: nudge content left to reveal right-side elements.
-            const leftBias = Math.round(availableW * 0.18);
-            panX -= leftBias;
+            // Center the scaled content cleanly
+            const scaledW = bounds.width * currentZoom;
+            const scaledH = bounds.height * currentZoom;
+            panX = Math.round((availableW - scaledW) / 2 - bounds.minX * currentZoom);
+            panY = Math.round((availableH - scaledH) / 2 - bounds.minY * currentZoom);
 
             applyCanvasTransform();
         }
