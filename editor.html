@@ -1816,7 +1816,8 @@
 
         /* Type-specific heights only — no appearance changes */
         #contentLayer.mobile-grid .el-music {
-            height: 90px !important;
+            height: 100px !important;
+            overflow: hidden;
         }
 
         #contentLayer.mobile-grid .el-sticker {
@@ -2558,6 +2559,32 @@
             canvasEl.classList.add('mobile-grid-active');
             contentLayer.classList.add('mobile-grid');
             contentLayer.style.transform = 'none';
+            setTimeout(setMobileGridHeights, 80);
+        }
+
+        // Set each grid cell height based on the element's original stored aspect ratio
+        function setMobileGridHeights() {
+            if (!isMobileViewport()) return;
+            const pad = 32;
+            const gap = 12;
+            const cellW = Math.max(80, Math.floor((window.innerWidth - pad - gap) / 2));
+
+            contentLayer.querySelectorAll('.canvas-element').forEach(el => {
+                const origW = parseFloat(el.style.width) || 200;
+                const origH = parseFloat(el.style.height) || 200;
+
+                if (el.classList.contains('el-music')) {
+                    el.style.setProperty('height', '100px', 'important');
+                } else if (el.classList.contains('el-sticker')) {
+                    el.style.setProperty('height', '90px', 'important');
+                } else if (el.classList.contains('el-letter')) {
+                    el.style.setProperty('height', '140px', 'important');
+                } else {
+                    const ratio = origH / origW;
+                    const h = Math.max(100, Math.min(Math.round(cellW * ratio), 300));
+                    el.style.setProperty('height', h + 'px', 'important');
+                }
+            });
         }
 
         let fitViewportTimeout = null;
