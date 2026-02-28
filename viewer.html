@@ -9,7 +9,6 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Kalam:wght@300;400;700&family=Caveat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap"
         rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary: #c9184a;
@@ -881,10 +880,6 @@
 
     <script>
         // ═══ CONFIG ═══
-        const SUPABASE_URL = 'https://yahblufnafnyqoligtlw.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhaGJsdWZuYWZueXFvbGlndGx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5OTQ0NjYsImV4cCI6MjA4NjU3MDQ2Nn0.ZV0aMjzTMHWThE-0x2LIoq2WxcubL67pBVNiyQPosV0';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
         const canvas = document.getElementById('canvas');
         const contentLayer = document.getElementById('contentLayer');
         const lockScreen = document.getElementById('lockScreen');
@@ -945,27 +940,13 @@
         });
 
         async function fetchCanvas(id) {
-            const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-
-            if (isUUID) {
-                const { data, error } = await supabaseClient
-                    .from('canvases').select('*').eq('id', id).maybeSingle();
-                if (error) throw new Error(error.message);
-                return data;
+            const res = await fetch(`/api/get_canvas?id=${encodeURIComponent(id)}`);
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || 'Failed to load bouquet');
             }
-
-            // Name lookup - try the JSONB field first
-            const { data: d1, error: e1 } = await supabaseClient
-                .from('canvases').select('*')
-                .eq('canvas_data->>name', id).maybeSingle();
-            if (d1) return d1;
-
-            // Fallback: scan all and find name inside JSON
-            const { data: all, error: e2 } = await supabaseClient
-                .from('canvases').select('*').limit(200);
-            if (e2) throw new Error(e2.message);
-            if (!all) return null;
-            return all.find(row => row.canvas_data?.name === id) || null;
+            const datajson = await res.json();
+            return datajson.data || null;
         }
 
         // ═══ FLOATING HEARTS ═══
