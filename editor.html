@@ -1908,12 +1908,56 @@
             background: rgba(0, 0, 0, 0.8);
             transform: scale(0.9);
         }
+
+        /* Mobile floating Publish button */
+        #mobilePubFab {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            #mobilePubFab {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                position: fixed;
+                bottom: 24px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 200;
+                background: var(--primary, #c9184a);
+                color: #fff;
+                border: none;
+                border-radius: 28px;
+                padding: 14px 28px;
+                font-size: 15px;
+                font-weight: 600;
+                font-family: 'Inter', sans-serif;
+                letter-spacing: 0.02em;
+                box-shadow: 0 6px 24px rgba(201, 24, 74, 0.4);
+                cursor: pointer;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
+                transition: transform 0.15s, box-shadow 0.15s;
+                white-space: nowrap;
+            }
+
+            #mobilePubFab:active {
+                transform: translateX(-50%) scale(0.95);
+                box-shadow: 0 3px 12px rgba(201, 24, 74, 0.35);
+            }
+        }
     </style>
 
 
 
     <!-- Big Footer Text -->
     <!-- Big Footer Text -->
+    <!-- Mobile floating Publish FAB -->
+    <button id="mobilePubFab" onclick="openPublishModal()">
+        <span style="font-size:18px;">🔗</span> Publish &amp; Share
+    </button>
+
     <!-- Publish Modal -->
     <div class="modal-overlay" id="publishModal"
         style="display:none; align-items:center; justify-content:center; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:5000; backdrop-filter:blur(4px);">
