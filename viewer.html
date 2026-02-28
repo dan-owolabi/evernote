@@ -780,41 +780,32 @@
             transform: none !important;
         }
 
-        /* Type-specific heights */
+        /* Type-specific heights only — no appearance changes */
         #contentLayer.mobile-grid .el-music {
             height: 90px !important;
         }
 
         #contentLayer.mobile-grid .el-sticker {
             height: 90px !important;
-            font-size: 48px;
         }
 
         #contentLayer.mobile-grid .el-letter {
             height: 140px !important;
-            background: rgba(255, 255, 255, 0.15) !important;
         }
 
-        /* Images and videos fill their cell */
+        /* Images/videos fill their cell */
         #contentLayer.mobile-grid .el-image .el-content,
         #contentLayer.mobile-grid .el-video .el-content {
             width: 100% !important;
             height: 100% !important;
             object-fit: cover !important;
-            border-radius: 14px;
         }
 
-        /* Envelope fills the letter cell */
-        #contentLayer.mobile-grid .envelope-view {
-            border-radius: 14px;
-        }
-
-        /* Music iframes and audio fill their cell */
+        /* Music media fills its cell */
         #contentLayer.mobile-grid .el-music iframe,
         #contentLayer.mobile-grid .el-music audio {
             width: 100% !important;
             height: 100% !important;
-            border-radius: 14px;
         }
 
         /* Hide resize/rotate handles in grid mode — not needed */
