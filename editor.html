@@ -1785,19 +1785,21 @@
         }
 
         #canvas.mobile-grid-active .fixed-backdrop img {
-            width: 100%;
-            height: 100%;
+            width: 110%;
+            height: 110%;
             object-fit: cover;
-            object-position: center top;
+            object-position: center center;
+            transform: translate(-5%, -5%);
         }
 
-        /* Content layer — smart adaptive grid */
+        /* Content layer — flex wrapper for staggered columns */
         #contentLayer.mobile-grid {
             position: relative !important;
-            display: grid !important;
-            grid-template-columns: 1fr 1fr;
-            grid-auto-flow: row dense;
-            gap: 12px;
+            display: flex !important;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            gap: 0;
             padding: 80px 16px 120px;
             transform: none !important;
             width: 100%;
@@ -1805,48 +1807,61 @@
             z-index: 8;
         }
 
-        /* All canvas elements become grid items */
-        #contentLayer.mobile-grid .canvas-element {
-            position: relative !important;
-            left: auto !important;
-            top: auto !important;
-            width: 100% !important;
-            height: 160px !important;
-            transform: none !important;
-        }
-
-        /* Music only: full-width row, no horizontal scroll */
+        /* Music: full-width on top */
         #contentLayer.mobile-grid .el-music {
-            grid-column: 1 / -1;
+            flex: 0 0 100%;
             width: 100% !important;
             height: 110px !important;
             overflow: hidden;
+            margin-bottom: 12px;
+            position: relative !important;
+            left: auto !important;
+            top: auto !important;
+            transform: none !important;
         }
 
-        #contentLayer.mobile-grid .el-sticker {
-            height: 90px !important;
-        }
-
-        #contentLayer.mobile-grid .el-letter {
-            height: 140px !important;
-        }
-
-        /* Images/videos fill their cell */
-        #contentLayer.mobile-grid .el-image .el-content,
-        #contentLayer.mobile-grid .el-video .el-content {
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: cover !important;
-        }
-
-        /* Music embed fills its full-width row */
         #contentLayer.mobile-grid .el-music iframe,
         #contentLayer.mobile-grid .el-music audio {
             width: 100% !important;
             height: 100% !important;
         }
 
-        /* Keep resize/rotate visible for editing — position them relative to cell */
+        /* Two staggered flex columns */
+        #contentLayer.mobile-grid .mobile-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        #contentLayer.mobile-grid .mobile-col-left {
+            margin-right: 6px;
+        }
+
+        #contentLayer.mobile-grid .mobile-col-right {
+            margin-left: 6px;
+            padding-top: 40px;
+        }
+
+        /* Elements inside columns */
+        #contentLayer.mobile-grid .mobile-col .canvas-element {
+            position: relative !important;
+            left: auto !important;
+            top: auto !important;
+            width: 100% !important;
+            transform: none !important;
+        }
+
+        /* Images/videos fill their cell */
+        #contentLayer.mobile-grid .mobile-col .el-image .el-content,
+        #contentLayer.mobile-grid .mobile-col .el-video .el-content {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+        }
+
+        /* Keep resize/rotate visible for editing */
         #contentLayer.mobile-grid .resize-handle {
             right: 4px;
             bottom: 4px;
@@ -2557,28 +2572,43 @@
                 return;
             }
 
-            // Mobile: activate grid layout
+            // Mobile: activate staggered column layout
             workspace.classList.add('mobile-grid-active');
             canvasEl.classList.add('mobile-grid-active');
             contentLayer.classList.add('mobile-grid');
             contentLayer.style.transform = 'none';
-            setTimeout(setMobileGridHeights, 80);
+            setTimeout(applyMobileColumns, 80);
         }
 
-        // Set each grid cell height based on the element's original stored aspect ratio
-        function setMobileGridHeights() {
+        // Split non-music elements into two staggered flex columns
+        function applyMobileColumns() {
             if (!isMobileViewport()) return;
-            const pad = 32;
-            const gap = 12;
-            const cellW = Math.max(80, Math.floor((window.innerWidth - pad - gap) / 2));
+            restoreMobileColumns();
 
-            contentLayer.querySelectorAll('.canvas-element').forEach(el => {
+            const els = Array.from(contentLayer.children)
+                .filter(el => el.classList.contains('canvas-element'));
+            const otherEls = els.filter(el => !el.classList.contains('el-music'));
+
+            const leftCol = document.createElement('div');
+            leftCol.className = 'mobile-col mobile-col-left';
+            const rightCol = document.createElement('div');
+            rightCol.className = 'mobile-col mobile-col-right';
+
+            otherEls.forEach((el, i) => {
+                (i % 2 === 0 ? leftCol : rightCol).appendChild(el);
+            });
+
+            contentLayer.appendChild(leftCol);
+            contentLayer.appendChild(rightCol);
+
+            const gap = 12;
+            const padding = 32;
+            const cellW = Math.max(80, Math.floor((window.innerWidth - padding - gap) / 2));
+
+            otherEls.forEach(el => {
                 const origW = parseFloat(el.style.width) || 200;
                 const origH = parseFloat(el.style.height) || 200;
-
-                if (el.classList.contains('el-music')) {
-                    el.style.setProperty('height', '110px', 'important');
-                } else if (el.classList.contains('el-sticker')) {
+                if (el.classList.contains('el-sticker')) {
                     el.style.setProperty('height', '90px', 'important');
                 } else if (el.classList.contains('el-letter')) {
                     el.style.setProperty('height', '140px', 'important');
@@ -2587,6 +2617,17 @@
                     const h = Math.max(100, Math.min(Math.round(cellW * ratio), 300));
                     el.style.setProperty('height', h + 'px', 'important');
                 }
+            });
+
+            contentLayer.querySelectorAll('.el-music').forEach(el => {
+                el.style.setProperty('height', '110px', 'important');
+            });
+        }
+
+        function restoreMobileColumns() {
+            contentLayer.querySelectorAll('.mobile-col').forEach(col => {
+                Array.from(col.children).forEach(child => contentLayer.insertBefore(child, col));
+                col.remove();
             });
         }
 
