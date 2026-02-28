@@ -1871,6 +1871,43 @@
             top: -24px;
             right: 50%;
         }
+
+        /* Mobile ↑↓ reorder controls */
+        .mobile-order-ctrl {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            z-index: 60;
+        }
+
+        .mob-up-btn,
+        .mob-dn-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(6px);
+            color: #fff;
+            border: none;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .mob-up-btn:active,
+        .mob-dn-btn:active {
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(0.9);
+        }
     </style>
 
 
@@ -2587,7 +2624,16 @@
 
             const els = Array.from(contentLayer.children)
                 .filter(el => el.classList.contains('canvas-element'));
-            const otherEls = els.filter(el => !el.classList.contains('el-music'));
+            const musicEls = els.filter(el => el.classList.contains('el-music'));
+            let otherEls = els.filter(el => !el.classList.contains('el-music'));
+
+            // Assign stable mobile-index on first run
+            otherEls.forEach((el, i) => {
+                if (el.dataset.mobileIndex === undefined) el.dataset.mobileIndex = i;
+            });
+            // Sort so ↑/↓ swaps persist across rebuilds
+            otherEls.sort((a, b) =>
+                parseInt(a.dataset.mobileIndex) - parseInt(b.dataset.mobileIndex));
 
             const leftCol = document.createElement('div');
             leftCol.className = 'mobile-col mobile-col-left';
@@ -2596,18 +2642,31 @@
 
             otherEls.forEach((el, i) => {
                 (i % 2 === 0 ? leftCol : rightCol).appendChild(el);
+                // ↑/↓ reorder buttons
+                el.querySelectorAll('.mobile-order-ctrl').forEach(c => c.remove());
+                const ctrl = document.createElement('div');
+                ctrl.className = 'mobile-order-ctrl';
+                const upBtn = document.createElement('button');
+                upBtn.className = 'mob-up-btn'; upBtn.textContent = '↑';
+                upBtn.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); moveMobileElement(el, -1); });
+                upBtn.addEventListener('click', e => { e.stopPropagation(); moveMobileElement(el, -1); });
+                const dnBtn = document.createElement('button');
+                dnBtn.className = 'mob-dn-btn'; dnBtn.textContent = '↓';
+                dnBtn.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); moveMobileElement(el, 1); });
+                dnBtn.addEventListener('click', e => { e.stopPropagation(); moveMobileElement(el, 1); });
+                ctrl.appendChild(upBtn);
+                ctrl.appendChild(dnBtn);
+                el.appendChild(ctrl);
             });
 
             contentLayer.appendChild(leftCol);
             contentLayer.appendChild(rightCol);
 
-            // If there are 2+ music tracks, separate: first at top, last at bottom
             if (musicEls.length >= 2) {
                 contentLayer.appendChild(musicEls[musicEls.length - 1]);
             }
 
-            const gap = 12;
-            const padding = 32;
+            const gap = 12, padding = 32;
             const cellW = Math.max(80, Math.floor((window.innerWidth - padding - gap) / 2));
 
             otherEls.forEach(el => {
@@ -2629,9 +2688,27 @@
             });
         }
 
+        // Swap mobile order indices and rebuild columns
+        function moveMobileElement(el, direction) {
+            const allEls = Array.from(contentLayer.querySelectorAll('.canvas-element:not(.el-music)'));
+            allEls.sort((a, b) =>
+                parseInt(a.dataset.mobileIndex || 0) - parseInt(b.dataset.mobileIndex || 0));
+            const idx = allEls.indexOf(el);
+            const swapIdx = idx + direction;
+            if (swapIdx < 0 || swapIdx >= allEls.length) return;
+            const swapEl = allEls[swapIdx];
+            const myIdx = parseInt(el.dataset.mobileIndex);
+            el.dataset.mobileIndex = parseInt(swapEl.dataset.mobileIndex);
+            swapEl.dataset.mobileIndex = myIdx;
+            applyMobileColumns();
+        }
+
         function restoreMobileColumns() {
             contentLayer.querySelectorAll('.mobile-col').forEach(col => {
-                Array.from(col.children).forEach(child => contentLayer.insertBefore(child, col));
+                Array.from(col.children).forEach(child => {
+                    child.querySelectorAll('.mobile-order-ctrl').forEach(c => c.remove());
+                    contentLayer.insertBefore(child, col);
+                });
                 col.remove();
             });
         }
