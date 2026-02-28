@@ -828,6 +828,13 @@
             object-fit: cover !important;
         }
 
+        /* Ensure taps on elements register as clicks (not scroll) on iOS/Android */
+        #contentLayer.mobile-grid .mobile-col .canvas-element,
+        #contentLayer.mobile-grid .el-music {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         /* Hide handles in viewer mode */
         #contentLayer.mobile-grid .resize-handle,
         #contentLayer.mobile-grid .rotate-handle {
@@ -1326,6 +1333,70 @@
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;');
+        }
+
+        // ═══ MEDIA VIEWER (lightbox for images and videos) ═══
+        function openMediaViewer(el, type) {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = [
+                'position:fixed', 'inset:0', 'background:rgba(0,0,0,0.92)',
+                'z-index:99999', 'display:flex', 'align-items:center',
+                'justify-content:center', 'padding:20px', 'cursor:pointer'
+            ].join(';');
+
+            let media = null;
+
+            if (type === 'image') {
+                const src = el.querySelector('img')?.src;
+                if (src) {
+                    media = document.createElement('img');
+                    media.src = src;
+                    media.style.cssText = 'max-width:100%;max-height:90vh;object-fit:contain;border-radius:8px;cursor:default';
+                }
+            } else if (type === 'video') {
+                const vid = el.querySelector('video');
+                const iframe = el.querySelector('iframe');
+                if (vid) {
+                    media = document.createElement('video');
+                    media.src = vid.src;
+                    Array.from(vid.querySelectorAll('source')).forEach(s => {
+                        const ns = document.createElement('source');
+                        ns.src = s.src; ns.type = s.type;
+                        media.appendChild(ns);
+                    });
+                    media.controls = true;
+                    media.autoplay = true;
+                    media.playsInline = true;
+                    media.style.cssText = 'max-width:100%;max-height:90vh;border-radius:8px;cursor:default;background:#000';
+                } else if (iframe) {
+                    media = document.createElement('iframe');
+                    media.src = iframe.src;
+                    media.allow = 'autoplay; fullscreen; encrypted-media';
+                    media.style.cssText = 'width:90vw;max-width:640px;aspect-ratio:16/9;border:none;border-radius:8px;cursor:default';
+                }
+            }
+
+            if (media) {
+                media.onclick = e => e.stopPropagation();
+                overlay.appendChild(media);
+            }
+
+            // Close button
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = '&times;';
+            closeBtn.style.cssText = [
+                'position:absolute', 'top:16px', 'right:16px',
+                'width:40px', 'height:40px', 'border-radius:50%',
+                'background:rgba(255,255,255,0.25)', 'border:none',
+                'color:#fff', 'font-size:22px', 'cursor:pointer',
+                'display:flex', 'align-items:center', 'justify-content:center',
+                'line-height:1', 'z-index:2'
+            ].join(';');
+            closeBtn.onclick = e => { e.stopPropagation(); overlay.remove(); };
+            overlay.appendChild(closeBtn);
+
+            overlay.onclick = () => overlay.remove();
+            document.body.appendChild(overlay);
         }
 
         function openLetterViewer(text, bgColor, fontSize, textAlign) {
