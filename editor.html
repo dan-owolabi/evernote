@@ -2034,14 +2034,7 @@
         </div>
     </div>
     <script>
-        /* 
-           SUPABASE CONFIGURATION 
-           (Restored)
-        */
-        /* 
-           SUPABASE CONFIGURATION REPLACED WITH VERCEL API 
-        */
-        const supabaseClient = null; // Removed, using fetch API instead.
+        // DB: Neon Postgres via /api/* Vercel routes
 
         /* Publish Modal Logic */
         let currentPubType = 'date_short';
@@ -2261,7 +2254,7 @@
                     });
                 }
 
-        /* Compress all base64 images in elements to keep Supabase payload small */
+        /* Compress all base64 images in elements to keep Neon DB payload small */
         async function compressElementsForPublish(elements) {
                     var out = [];
                     for (var i = 0; i < elements.length; i++) {
@@ -3735,10 +3728,6 @@
 
 
 
-                    /* 
-                       SUPABASE CONFIGURATION 
-                       (Managed centrally - duplicate declarations removed)
-                    */
 
 
                     function getCanvasIdFromUrl() {
@@ -4213,7 +4202,7 @@
                         saveCanvasToLocalStorage(state);
                         saveCanvasToIndexedDb(canvasId, state).catch(e => console.error(e));
 
-                        // removed supabase checks, proceed with fetch if we want to save
+                        // save to Neon DB via API
                         try {
                             // Compress images to keep DB payload small
                             var compressedState = Object.assign({}, state, {
@@ -4270,7 +4259,7 @@
                     }
 
                     // Merge two canvas states: use positions from 'primary' but recover
-                    // missing contentHTML from 'recovery' (e.g. Supabase has full data,
+                    // missing contentHTML from 'recovery' (e.g. Neon DB has full data,
                     // localStorage only has positions).
                     function mergeCanvasStates(primary, recovery) {
                         if (!primary || !recovery) return primary || recovery;
