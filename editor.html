@@ -2283,18 +2283,20 @@
 
         /* Progressive compression — shrinks until payload fits under 4MB */
         async function compressElementsProgressive(elements) {
+            // Vercel hard limit is 4.5 MB — target 3.5 MB to stay safely under
             var passes = [
-                { maxDim: 1000, quality: 0.65 },
-                { maxDim: 800,  quality: 0.55 },
-                { maxDim: 650,  quality: 0.45 },
-                { maxDim: 500,  quality: 0.38 },
+                { maxDim: 900,  quality: 0.62 },
+                { maxDim: 750,  quality: 0.52 },
+                { maxDim: 600,  quality: 0.42 },
+                { maxDim: 480,  quality: 0.34 },
+                { maxDim: 380,  quality: 0.28 },
             ];
             var compressed = elements;
             for (var p = 0; p < passes.length; p++) {
                 compressed = await compressElementsForPublish(compressed, passes[p].maxDim, passes[p].quality);
                 var size = JSON.stringify(compressed).length / (1024 * 1024);
                 console.log('Compression pass', p + 1, '(' + passes[p].maxDim + 'px / q' + passes[p].quality + '):', size.toFixed(2) + ' MB');
-                if (size < 4.0) break;
+                if (size < 3.5) break;
             }
             return compressed;
         }
@@ -2312,9 +2314,10 @@
                 ...(securityConfig ? { security: securityConfig } : {})
             };
 
-            var sizeMB = JSON.stringify(dataToSave).length / (1024 * 1024);
+            var bodyStr = JSON.stringify({ id: canvasId, canvas_data: dataToSave });
+            var sizeMB = bodyStr.length / (1024 * 1024);
             console.log('Final publish payload size:', sizeMB.toFixed(2) + ' MB');
-            if (sizeMB > 9) {
+            if (sizeMB > 4.2) {
                 throw new Error('Canvas is too large to publish (' + sizeMB.toFixed(1) + ' MB). Try removing some images or using smaller photos.');
             }
 
@@ -2322,13 +2325,16 @@
                 fetch('/api/save_canvas', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: canvasId, canvas_data: dataToSave })
+                    body: bodyStr
                 }),
                 30000, 'Publish timed out — please try again.'
             );
             if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.error || 'Publish failed.');
+                const errText = await res.text().catch(() => '');
+                let errMsg = 'Publish failed (HTTP ' + res.status + ').';
+                try { const j = JSON.parse(errText); if (j.error) errMsg = j.error; } catch (e) {}
+                if (res.status === 413) errMsg = 'Payload still too large after compression. Try removing some images.';
+                throw new Error(errMsg);
             }
             return resolvedName;
         }
