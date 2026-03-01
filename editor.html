@@ -2318,7 +2318,12 @@
             var sizeMB = bodyStr.length / (1024 * 1024);
             console.log('Final publish payload size:', sizeMB.toFixed(2) + ' MB');
             if (sizeMB > 4.2) {
-                throw new Error('Canvas is too large to publish (' + sizeMB.toFixed(1) + ' MB). Try removing some images or using smaller photos.');
+                throw new Error(
+                    'Canvas is too large to publish (' + sizeMB.toFixed(1) + ' MB after max compression).\n\n' +
+                    'This canvas has existing high-res images. Please:\n' +
+                    '• Delete and re-add your photos (they\'ll be auto-compressed on upload), or\n' +
+                    '• Remove some images to reduce the size.'
+                );
             }
 
             const res = await withTimeout(
@@ -3209,8 +3214,9 @@
                 const selectedFile = e.target.files && e.target.files[0];
                 if (!selectedFile) return;
                 const reader = new FileReader();
-                reader.onload = (re) => {
-                    const src = re.target.result;
+                reader.onload = async (re) => {
+                    // Compress on upload so stored base64 is always small
+                    const src = await compressBase64Image(re.target.result, 1200, 0.75);
                     createImageCanvasElement(src, {
                         x: 300, y: 200, maxWidth: 360, maxHeight: 300, fallbackWidth: 280,
                         fallbackHeight: 220
@@ -3227,8 +3233,9 @@
         function changeBouquet() {
             bouquetInput.onchange = (e) => {
                 const reader = new FileReader();
-                reader.onload = (re) => {
-                    document.querySelector('#fixedBouquet img').src = re.target.result;
+                reader.onload = async (re) => {
+                    const src = await compressBase64Image(re.target.result, 1600, 0.8);
+                    document.querySelector('#fixedBouquet img').src = src;
                 };
                 reader.readAsDataURL(e.target.files[0]);
             };
