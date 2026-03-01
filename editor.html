@@ -2241,7 +2241,7 @@
 
         /* Compress a single base64 image to reduce payload size */
         function compressBase64Image(dataUri, maxDim, quality) {
-            maxDim = maxDim || 1200; quality = quality || 0.7;
+            maxDim = maxDim || 1000; quality = quality || 0.65;
             return new Promise(function (resolve) {
                 var img = new Image();
                 img.onload = function () {
@@ -2260,23 +2260,20 @@
             });
         }
 
-        /* Compress all base64 images in elements to keep Supabase payload small */
-        async function compressElementsForPublish(elements) {
+        /* Compress all base64 images in elements — compress every image regardless of size */
+        async function compressElementsForPublish(elements, maxDim, quality) {
+            maxDim = maxDim || 1000; quality = quality || 0.65;
+            var re = /data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/g;
             var out = [];
             for (var i = 0; i < elements.length; i++) {
                 var el = elements[i];
-                if (!el.contentHTML || (el.type !== 'image' && el.type !== 'sticker')) {
-                    out.push(el); continue;
-                }
+                if (!el.contentHTML) { out.push(el); continue; }
                 var html = el.contentHTML;
-                var re = /data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/g;
                 var matches = html.match(re);
                 if (matches) {
                     for (var j = 0; j < matches.length; j++) {
-                        if (matches[j].length > 50000) { // only compress if > ~37KB
-                            var compressed = await compressBase64Image(matches[j]);
-                            html = html.split(matches[j]).join(compressed);
-                        }
+                        var compressed = await compressBase64Image(matches[j], maxDim, quality);
+                        html = html.split(matches[j]).join(compressed);
                     }
                 }
                 out.push(Object.assign({}, el, { contentHTML: html }));
@@ -2284,10 +2281,28 @@
             return out;
         }
 
+        /* Progressive compression — shrinks until payload fits under 4MB */
+        async function compressElementsProgressive(elements) {
+            var passes = [
+                { maxDim: 1000, quality: 0.65 },
+                { maxDim: 800,  quality: 0.55 },
+                { maxDim: 650,  quality: 0.45 },
+                { maxDim: 500,  quality: 0.38 },
+            ];
+            var compressed = elements;
+            for (var p = 0; p < passes.length; p++) {
+                compressed = await compressElementsForPublish(compressed, passes[p].maxDim, passes[p].quality);
+                var size = JSON.stringify(compressed).length / (1024 * 1024);
+                console.log('Compression pass', p + 1, '(' + passes[p].maxDim + 'px / q' + passes[p].quality + '):', size.toFixed(2) + ' MB');
+                if (size < 4.0) break;
+            }
+            return compressed;
+        }
+
         async function publishCanvasWithName(publishName, securityConfig) {
             const state = collectCanvasState();
             const { footerText, bgColor } = state;
-            const elements = await compressElementsForPublish(state.elements);
+            const elements = await compressElementsProgressive(state.elements);
             const resolvedName = await resolveUniquePublishName(publishName);
             const dataToSave = {
                 elements,
@@ -2297,11 +2312,9 @@
                 ...(securityConfig ? { security: securityConfig } : {})
             };
 
-            // Check payload size before sending
-            var payloadJson = JSON.stringify(dataToSave);
-            var sizeMB = payloadJson.length / (1024 * 1024);
-            console.log('Publish payload size:', sizeMB.toFixed(2) + ' MB');
-            if (sizeMB > 4.5) {
+            var sizeMB = JSON.stringify(dataToSave).length / (1024 * 1024);
+            console.log('Final publish payload size:', sizeMB.toFixed(2) + ' MB');
+            if (sizeMB > 9) {
                 throw new Error('Canvas is too large to publish (' + sizeMB.toFixed(1) + ' MB). Try removing some images or using smaller photos.');
             }
 
@@ -4198,7 +4211,7 @@
             try {
                 // Compress images to keep payload small
                 var compressedState = Object.assign({}, state, {
-                    elements: await compressElementsForPublish(state.elements || [])
+                    elements: await compressElementsProgressive(state.elements || [])
                 });
                 const res = await fetch('/api/save_canvas', {
                     method: 'POST',
