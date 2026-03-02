@@ -2262,13 +2262,13 @@
             });
         }
 
-        /* Compress all base64 images; strip large base64 videos (keep small ones < ~2.5 MB) */
+        /* Compress all base64 images; strip large base64 videos (keep small ones < ~3 MB) */
         async function compressElementsForPublish(elements, maxDim, quality) {
             maxDim = maxDim || 1000; quality = quality || 0.65;
             var imgRe = /data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/g;
             var vidRe = /data:video\/[^;]+;base64,[A-Za-z0-9+/=]+/g;
-            // 2.5 MB file → ~3.33 MB base64 chars — keep if under this
-            var MAX_VIDEO_B64_CHARS = 3.4 * 1024 * 1024;
+            // 3 MB file → ~4 MB base64 chars — keep if under this
+            var MAX_VIDEO_B64_CHARS = 4.1 * 1024 * 1024;
             var out = [];
             for (var i = 0; i < elements.length; i++) {
                 var el = elements[i];
@@ -3304,8 +3304,8 @@
             return blob.url;
         }
 
-        // Videos ≤ 2.5 MB are embedded as base64 (no Blob needed)
-        const SMALL_VIDEO_LIMIT = 2.5 * 1024 * 1024;
+        // Videos ≤ 3 MB are embedded as base64 (no Blob needed)
+        const SMALL_VIDEO_LIMIT = 3 * 1024 * 1024;
 
         function addVideoFile() {
             const input = document.createElement('input');
