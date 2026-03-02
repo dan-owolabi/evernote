@@ -3258,24 +3258,64 @@
             addMenu.classList.remove('active');
         }
 
+        /* Upload video file to Vercel Blob (bypasses 4.5MB serverless limit) */
+        async function uploadVideoToBlob(file) {
+            const pathname = 'videos/' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+            // Step 1: get a client upload token from our server
+            const tokenRes = await fetch('/api/blob_token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'blob.generate-client-token',
+                    payload: { pathname, callbackUrl: window.location.origin + '/api/blob_token' }
+                }),
+            });
+            if (!tokenRes.ok) {
+                const e = await tokenRes.json().catch(() => ({}));
+                throw new Error(e.error || 'Could not get upload token');
+            }
+            const tokenBody = await tokenRes.json();
+            const clientToken = tokenBody.clientToken;
+
+            // Step 2: upload directly from browser to Vercel Blob (no size limit)
+            const uploadRes = await fetch(
+                'https://blob.vercel-storage.com/' + encodeURIComponent(pathname),
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + clientToken,
+                        'x-api-version': '7',
+                        'Content-Type': file.type,
+                    },
+                    body: file,
+                }
+            );
+            if (!uploadRes.ok) throw new Error('Video upload to blob failed (' + uploadRes.status + ')');
+            const blob = await uploadRes.json();
+            return blob.url;
+        }
+
         function addVideoFile() {
             const input = document.createElement('input');
             input.type = 'file'; input.accept = 'video/*,.mov';
-            input.onchange = (e) => {
+            input.onchange = async (e) => {
                 const selectedFile = e.target.files && e.target.files[0];
                 if (!selectedFile) return;
-                const reader = new FileReader();
-                reader.onload = (re) => {
-                    const src = re.target.result;
-                    createVideoCanvasElement(src, {
+                e.target.value = '';
+                addMenu.classList.remove('active');
+                closeModal();
+                showStatusToast('Uploading video...');
+                try {
+                    const url = await uploadVideoToBlob(selectedFile);
+                    createVideoCanvasElement(url, {
                         x: 300, y: 200, maxWidth: 420, maxHeight: 300, fallbackWidth: 320,
                         fallbackHeight: 180
                     });
-                    addMenu.classList.remove('active');
-                    closeModal();
-                };
-                reader.readAsDataURL(selectedFile);
-                e.target.value = '';
+                    showStatusToast('Video uploaded!');
+                } catch (err) {
+                    alert('Video upload failed: ' + err.message + '\n\nTip: Use a YouTube/TikTok/Instagram link instead.');
+                }
             };
             input.value = '';
             input.click();
@@ -3471,18 +3511,20 @@
             };
         }
 
-        function handleVideoFile(file) {
-            const reader = new FileReader();
-            reader.onload = (re) => {
-                const src = re.target.result;
-                createVideoCanvasElement(src, {
+        async function handleVideoFile(file) {
+            closeModal();
+            showStatusToast('Uploading video...');
+            try {
+                const url = await uploadVideoToBlob(file);
+                createVideoCanvasElement(url, {
                     x: 1300, y: 800, maxWidth: 420, maxHeight: 300, fallbackWidth: 320,
                     fallbackHeight: 180
                 });
                 addMenu.classList.remove('active');
-            };
-            reader.readAsDataURL(file);
-            closeModal();
+                showStatusToast('Video uploaded!');
+            } catch (err) {
+                alert('Video upload failed: ' + err.message + '\n\nTip: Use a YouTube/TikTok/Instagram link instead.');
+            }
         }
 
         function handleMusicFile(file) {
