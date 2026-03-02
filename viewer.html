@@ -769,7 +769,7 @@
             flex-wrap: wrap;
             align-items: flex-start;
             gap: 0;
-            padding: 16px;
+            padding: 4px;
             transform: none !important;
             width: 100%;
             height: auto !important;
@@ -782,7 +782,7 @@
             width: 100% !important;
             height: 110px !important;
             overflow: hidden;
-            margin-bottom: 12px;
+            margin-bottom: 4px;
             position: relative !important;
             left: auto !important;
             top: auto !important;
@@ -800,18 +800,26 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 4px;
             min-width: 0;
         }
 
         #contentLayer.mobile-grid .mobile-col-left {
-            margin-right: 6px;
+            margin-right: 2px;
         }
 
         #contentLayer.mobile-grid .mobile-col-right {
-            margin-left: 6px;
-            padding-top: 40px;
-            /* ✨ right column drops down */
+            margin-left: 2px;
+            padding-top: 20px;
+            /* ✨ right column drops down slightly */
+        }
+
+        /* Single element — no side-by-side, stretch full width */
+        #contentLayer.mobile-grid .mobile-col-single {
+            flex: 0 0 100%;
+            width: 100% !important;
+            margin: 0;
+            padding-top: 0;
         }
 
         /* Elements inside columns */
@@ -1268,8 +1276,16 @@
                 (i % 2 === 0 ? leftCol : rightCol).appendChild(el);
             });
 
-            contentLayer.appendChild(leftCol);
-            contentLayer.appendChild(rightCol);
+            // Only use two columns if both have content — otherwise single full-width column
+            const useTwoCols = rightCol.children.length > 0;
+            if (useTwoCols) {
+                contentLayer.appendChild(leftCol);
+                contentLayer.appendChild(rightCol);
+            } else {
+                // Single element (or all odd count): left col goes full-width
+                leftCol.classList.add('mobile-col-single');
+                contentLayer.appendChild(leftCol);
+            }
 
             // Second (last) music player goes to the very bottom
             if (musicEls.length >= 2) {
@@ -1277,9 +1293,11 @@
             }
 
             // Set aspect-ratio-correct heights
-            const gap = 12;
-            const padding = 32;
-            const cellW = Math.max(80, Math.floor((window.innerWidth - padding - gap) / 2));
+            const gap = 4;
+            const padding = 8;
+            const cellW = useTwoCols
+                ? Math.max(80, Math.floor((window.innerWidth - padding - gap) / 2))
+                : Math.max(80, window.innerWidth - padding);
 
             otherEls.forEach(el => {
                 const origW = parseFloat(el.style.width) || 200;
@@ -1290,7 +1308,8 @@
                     el.style.setProperty('height', '140px', 'important');
                 } else {
                     const ratio = origH / origW;
-                    const h = Math.max(100, Math.min(Math.round(cellW * ratio), 300));
+                    const maxH = useTwoCols ? 300 : 400;
+                    const h = Math.max(100, Math.min(Math.round(cellW * ratio), maxH));
                     el.style.setProperty('height', h + 'px', 'important');
                 }
             });
