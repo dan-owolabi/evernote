@@ -1,4 +1,4 @@
-import { handleUpload } from '@vercel/blob';
+import { handleUpload } from '@vercel/blob/client';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {

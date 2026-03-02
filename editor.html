@@ -2262,21 +2262,29 @@
             });
         }
 
-        /* Compress all base64 images; strip local base64 video (too large for publish) */
+        /* Compress all base64 images; strip large base64 videos (keep small ones < ~2.5 MB) */
         async function compressElementsForPublish(elements, maxDim, quality) {
             maxDim = maxDim || 1000; quality = quality || 0.65;
             var imgRe = /data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/g;
             var vidRe = /data:video\/[^;]+;base64,[A-Za-z0-9+/=]+/g;
+            // 2.5 MB file → ~3.33 MB base64 chars — keep if under this
+            var MAX_VIDEO_B64_CHARS = 3.4 * 1024 * 1024;
             var out = [];
             for (var i = 0; i < elements.length; i++) {
                 var el = elements[i];
                 if (!el.contentHTML) { out.push(el); continue; }
                 var html = el.contentHTML;
-                // Strip base64 video — local videos can't be published (100MB+)
-                // Users should use YouTube/TikTok embed links instead
-                if (vidRe.test(html)) {
-                    html = html.replace(vidRe, '');
-                    el = Object.assign({}, el, { _videoStripped: true });
+                // Strip base64 video only if too large to fit in publish payload
+                var vidMatches = html.match(vidRe);
+                if (vidMatches) {
+                    var stripped = false;
+                    for (var v = 0; v < vidMatches.length; v++) {
+                        if (vidMatches[v].length > MAX_VIDEO_B64_CHARS) {
+                            html = html.split(vidMatches[v]).join('');
+                            stripped = true;
+                        }
+                    }
+                    if (stripped) el = Object.assign({}, el, { _videoStripped: true });
                 }
                 var matches = html.match(imgRe);
                 if (matches) {
@@ -3296,6 +3304,9 @@
             return blob.url;
         }
 
+        // Videos ≤ 2.5 MB are embedded as base64 (no Blob needed)
+        const SMALL_VIDEO_LIMIT = 2.5 * 1024 * 1024;
+
         function addVideoFile() {
             const input = document.createElement('input');
             input.type = 'file'; input.accept = 'video/*,.mov';
@@ -3305,16 +3316,29 @@
                 e.target.value = '';
                 addMenu.classList.remove('active');
                 closeModal();
-                showStatusToast('Uploading video...');
-                try {
-                    const url = await uploadVideoToBlob(selectedFile);
-                    createVideoCanvasElement(url, {
-                        x: 300, y: 200, maxWidth: 420, maxHeight: 300, fallbackWidth: 320,
-                        fallbackHeight: 180
-                    });
-                    showStatusToast('Video uploaded!');
-                } catch (err) {
-                    alert('Video upload failed: ' + err.message + '\n\nTip: Use a YouTube/TikTok/Instagram link instead.');
+                if (selectedFile.size <= SMALL_VIDEO_LIMIT) {
+                    // Small video — embed as base64 directly
+                    const reader = new FileReader();
+                    reader.onload = (re) => {
+                        createVideoCanvasElement(re.target.result, {
+                            x: 300, y: 200, maxWidth: 420, maxHeight: 300,
+                            fallbackWidth: 320, fallbackHeight: 180
+                        });
+                        showStatusToast('Video added!');
+                    };
+                    reader.readAsDataURL(selectedFile);
+                } else {
+                    showStatusToast('Uploading video...');
+                    try {
+                        const url = await uploadVideoToBlob(selectedFile);
+                        createVideoCanvasElement(url, {
+                            x: 300, y: 200, maxWidth: 420, maxHeight: 300, fallbackWidth: 320,
+                            fallbackHeight: 180
+                        });
+                        showStatusToast('Video uploaded!');
+                    } catch (err) {
+                        alert('Video upload failed: ' + err.message + '\n\nTip: Use a YouTube/TikTok/Instagram link instead.');
+                    }
                 }
             };
             input.value = '';
@@ -3513,17 +3537,31 @@
 
         async function handleVideoFile(file) {
             closeModal();
-            showStatusToast('Uploading video...');
-            try {
-                const url = await uploadVideoToBlob(file);
-                createVideoCanvasElement(url, {
-                    x: 1300, y: 800, maxWidth: 420, maxHeight: 300, fallbackWidth: 320,
-                    fallbackHeight: 180
-                });
-                addMenu.classList.remove('active');
-                showStatusToast('Video uploaded!');
-            } catch (err) {
-                alert('Video upload failed: ' + err.message + '\n\nTip: Use a YouTube/TikTok/Instagram link instead.');
+            if (file.size <= SMALL_VIDEO_LIMIT) {
+                // Small video — embed as base64 directly
+                const reader = new FileReader();
+                reader.onload = (re) => {
+                    createVideoCanvasElement(re.target.result, {
+                        x: 1300, y: 800, maxWidth: 420, maxHeight: 300,
+                        fallbackWidth: 320, fallbackHeight: 180
+                    });
+                    addMenu.classList.remove('active');
+                    showStatusToast('Video added!');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                showStatusToast('Uploading video...');
+                try {
+                    const url = await uploadVideoToBlob(file);
+                    createVideoCanvasElement(url, {
+                        x: 1300, y: 800, maxWidth: 420, maxHeight: 300, fallbackWidth: 320,
+                        fallbackHeight: 180
+                    });
+                    addMenu.classList.remove('active');
+                    showStatusToast('Video uploaded!');
+                } catch (err) {
+                    alert('Video upload failed: ' + err.message + '\n\nTip: Use a YouTube/TikTok/Instagram link instead.');
+                }
             }
         }
 
