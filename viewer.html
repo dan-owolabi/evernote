@@ -931,7 +931,7 @@
                 // Race against a 15-second timeout
                 const fetchPromise = fetchCanvas(id);
                 const timeout = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Request timed out. Please try again.')), 15000)
+                    setTimeout(() => reject(new Error('Request timed out. Please try again.')), 30000)
                 );
                 const data = await Promise.race([fetchPromise, timeout]);
 
@@ -952,13 +952,42 @@
         });
 
         async function fetchCanvas(id) {
-            const res = await fetch(`/api/get_canvas?id=${encodeURIComponent(id)}`);
-            if (!res.ok) {
-                const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.error || 'Failed to load bouquet');
+            // Retry up to 3 times — Neon free tier cold-starts can cause the first
+            // query to return nothing or fail before the database wakes up.
+            const MAX_TRIES = 3;
+            const RETRY_DELAY = 2500; // ms between retries
+            let lastError;
+            for (let attempt = 1; attempt <= MAX_TRIES; attempt++) {
+                try {
+                    const res = await fetch(`/api/get_canvas?id=${encodeURIComponent(id)}`);
+                    if (res.status === 404) {
+                        // Might be a cold-start false-negative — retry unless last attempt
+                        if (attempt < MAX_TRIES) {
+                            await new Promise(r => setTimeout(r, RETRY_DELAY));
+                            continue;
+                        }
+                        throw new Error('Canvas not found');
+                    }
+                    if (!res.ok) {
+                        const errData = await res.json().catch(() => ({}));
+                        throw new Error(errData.error || 'Failed to load bouquet');
+                    }
+                    const datajson = await res.json();
+                    if (datajson.data) return datajson.data;
+                    // data was null — retry
+                    if (attempt < MAX_TRIES) {
+                        await new Promise(r => setTimeout(r, RETRY_DELAY));
+                        continue;
+                    }
+                    return null;
+                } catch (err) {
+                    lastError = err;
+                    if (attempt < MAX_TRIES) {
+                        await new Promise(r => setTimeout(r, RETRY_DELAY));
+                    }
+                }
             }
-            const datajson = await res.json();
-            return datajson.data || null;
+            throw lastError || new Error('Failed to load bouquet');
         }
 
         // ═══ FLOATING HEARTS ═══
