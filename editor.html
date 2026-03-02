@@ -2253,7 +2253,9 @@
                     var c = document.createElement('canvas');
                     c.width = w; c.height = h;
                     c.getContext('2d').drawImage(img, 0, 0, w, h);
-                    resolve(c.toDataURL('image/jpeg', quality));
+                    // WebP is ~30% smaller than JPEG; fall back to JPEG if unsupported
+                    var webp = c.toDataURL('image/webp', quality);
+                    resolve(webp.startsWith('data:image/webp') ? webp : c.toDataURL('image/jpeg', quality));
                 };
                 img.onerror = function () { resolve(dataUri); };
                 img.src = dataUri;
