@@ -2262,16 +2262,23 @@
             });
         }
 
-        /* Compress all base64 images in elements — compress every image regardless of size */
+        /* Compress all base64 images; strip local base64 video (too large for publish) */
         async function compressElementsForPublish(elements, maxDim, quality) {
             maxDim = maxDim || 1000; quality = quality || 0.65;
-            var re = /data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/g;
+            var imgRe = /data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/g;
+            var vidRe = /data:video\/[^;]+;base64,[A-Za-z0-9+/=]+/g;
             var out = [];
             for (var i = 0; i < elements.length; i++) {
                 var el = elements[i];
                 if (!el.contentHTML) { out.push(el); continue; }
                 var html = el.contentHTML;
-                var matches = html.match(re);
+                // Strip base64 video — local videos can't be published (100MB+)
+                // Users should use YouTube/TikTok embed links instead
+                if (vidRe.test(html)) {
+                    html = html.replace(vidRe, '');
+                    el = Object.assign({}, el, { _videoStripped: true });
+                }
+                var matches = html.match(imgRe);
                 if (matches) {
                     for (var j = 0; j < matches.length; j++) {
                         var compressed = await compressBase64Image(matches[j], maxDim, quality);
